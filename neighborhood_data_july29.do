@@ -66,16 +66,16 @@ use "merged_barrio_cases.dta", clear
 foreach dataset in "zika.dta" "chik.dta" "dengue.dta"{ 
 		use "`dataset'", clear
 		tostring codigo_barrio, replace
-		collapse (sum) casecount, by(codigo_barrio)
 		local i = `i' + 1
-		rename casecount casecount_`i'
+		rename casecount casecount`i'
+		collapse (sum) casecount, by(codigo_barrio)
 		save "`dataset'",  replace
-		}
+	}
 foreach dataset in "zika.dta" "chik.dta" "dengue.dta"{ 
 		use merged_barrio.dta, clear
 		merge 1:1 codigo_barrio using `dataset'.dta
 		drop _merge
-		save merged.dta, replace	
+		save merged_barrio.dta, replace	
 		}	
 
 rename casecount_1 countzikabarrio
