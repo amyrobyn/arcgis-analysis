@@ -105,7 +105,9 @@ use "merged_barrio_cases.dta", clear
 
 foreach dataset in "zika.dta" "chik.dta" "dengue.dta"{ 
 		use "`dataset'", clear
-		tostring codigo_barrio, replace
+			gen codigo_barriostring = string(real(cod_barrio),"%04.0f")
+			drop codigo_barrio
+			rename codigo_barriostring codigo_barrio
 		local i = `i' + 1
 		capture drop casecount
 		gen casecount = 1
