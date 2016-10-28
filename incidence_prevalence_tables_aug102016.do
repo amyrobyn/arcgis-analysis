@@ -337,7 +337,7 @@ foreach dataset in "kenya_pcr_igg_only.dta" "kenya_igg_only.dta" "kenya_pcr_only
 			encode infection_groups, gen(groups)
 			*destring age, replace
 			*destring gender, replace
-			table1, by(groups) vars(gender cat\age contn\malariabldsmrpos cat\) saving("table1_msambweni`dataset'.xls", replace) missing test
+			table1, by(groups) vars(gender cat\age contn\malariabldsmrpos cat\) saving(table1_groups_gender.xls", replace) missing test
 
 			*sum over infection_group
 			by groups, sort : summarize age gender, format

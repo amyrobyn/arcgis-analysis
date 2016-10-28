@@ -7,7 +7,7 @@
  ***************************************************/
 cd "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models"
 capture log close 
-log using "arcgis_analysis_only_oct_26_2016.smcl", text replace 
+log using "arcgis_analysis_only_oct_26_2016_mes.smcl", text replace 
 set scrollbufsize 100000
 set more 1
 
@@ -99,7 +99,7 @@ foreach dataset in "zika.dta" "chik.dta" "dengue.dta"{
 		capture drop casecount
 		gen casecount = 1
 		rename casecount casecount`i'
-		collapse (sum) casecount, by(codigo_barrio)
+		collapse (sum) casecount, by(codigo_barrio mes anos)
 		replace casecount`i' = 0 if casecount`i' ==.
 		save "`dataset'",  replace
 	}
@@ -107,9 +107,9 @@ foreach dataset in "zika.dta" "chik.dta" "dengue.dta"{
 foreach dataset in "zika.dta" "chik.dta" "dengue.dta"{ 
 		use merged_barrio.dta, clear
 		capture drop _merge
-		merge 1:1 codigo_barrio using `dataset'
+		merge m:m codigo_barrio using `dataset'
 		drop _merge
-		merge 1:1 codigo_barrio using "pop_total_sex_barrio.csv.dta"
+		merge m:m codigo_barrio using "pop_total_sex_barrio.csv.dta"
 		save merged_barrio, replace	
 }	
 use merged_barrio.dta, clear
@@ -186,8 +186,12 @@ gen maletofemale = male_pop/female_pop
 *drop Male_pop Female_pop
 
 sum arean3210 estrato_mon3210 tipo_de_vivienda_casa tipo_de_vivienda_apartamento tipo_de_vivienda_tipo_cuarto tipo_de_vivienda_otro_tipo industria comercio servicios otras_actividades unidades_auxiliares_tipo_gerenci unidades_auxiliares_diferentes_d desocupada trabaj no_trabaj_pero_tena_trabajo busc_trabajo_pero_haba_trabajado busc_trabajo_por_primera_vez estudi_y_no_trabaj_ni_busc_traba realiz_oficios_del_hogar_y_no_tr incapacitado_permanentemente_par vivi_de_jubilacin_o_renta_y_no_t estuvo_en_otra_situacin jefe_o_jefa_del_hogar conyuge__pareja_ hijo_a___hijastro_a_ yerno__nuera nieto_a_ padre__madre_o_suegro_a_ hermano_a___hermanastro_a_ otro_pariente empleado__a__domestico otro_no_pariente hijo_a__hijastro_a_ yerno_nuera padre_madre_o_suegro_a_ hermano_a__hermanastro_a_ v2 nocasadoylleva2oaosviviendoparej nocasadoyllevade2aosviviendopare separado_a__divorciado_a_ viudo_a_ soltero_a_ casado_a_  indigena rom raizal palenquero negro__a___mulato__afrocolombian ninguno_de_los_anteriores countzikabarrio countchikvbarrio countdenguebarrio total_pop viviendas hogares asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assistenciaesc_index_sum empty_ratio maletofemale
-
+rename anos year
+rename mes month
+drop _merge
+merge m:m month year using "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\temperature_data_raw\temp_anomoly_2014-2016.dta"
 save temp.dta, replace
+
 /*
 *stepwise regression models		
  touch regtableseform.xls, replace
@@ -201,7 +205,7 @@ foreach var in countdenguebarrio countchikvbarrio countzikabarrio{
 *stepwise models poisson		
 touch poissontableseform.xls, replace
 foreach var in countdenguebarrio countchikvbarrio countzikabarrio{
-	local indepenent  "arean3210 estrato_mon3210 asistencia_educativa_0__4_aos_si preescolar bsica_primaria bsica_secundaria media_acadmica_clsica media_tcnica superior__y__postgrado _ninguno no_informa occupation_condition_ocupada_con v5 occupation_condition_desocupadas  occupation_condition_total tipo_de_vivienda_casa tipo_de_vivienda_apartamento  tipo_de_vivienda_otro_tipo vivienda_con_acueducto vivienda_con_alcantarillado vivienda_con_energia vivienda_con_gas vivienda_con_telefono cobertura_vivienda_con____acuedu cobertura_vivienda_con____alcant cobertura_vivienda_con____energi cobertura_vivienda_con____gas cobertura_vivienda_con____telefo industria comercio servicios otras_actividades unidades_auxiliares_tipo_gerenci unidades_auxiliares_diferentes_d desocupada trabaj no_trabaj_pero_tena_trabajo busc_trabajo_pero_haba_trabajado busc_trabajo_por_primera_vez estudi_y_no_trabaj_ni_busc_traba realiz_oficios_del_hogar_y_no_tr incapacitado_permanentemente_par vivi_de_jubilacin_o_renta_y_no_t estuvo_en_otra_situacin jefe_o_jefa_del_hogar conyuge__pareja_ hijo_a___hijastro_a_ yerno__nuera nieto_a_ padre__madre_o_suegro_a_ hermano_a___hermanastro_a_ otro_pariente empleado__a__domestico otro_no_pariente hijo_a__hijastro_a_ yerno_nuera padre_madre_o_suegro_a_ hermano_a__hermanastro_a_ nocasadoylleva2oaosviviendoparej nocasadoyllevade2aosviviendopare separado_a__divorciado_a_ viudo_a_ soltero_a_ casado_a_  indigena rom raizal palenquero negro__a___mulato__afrocolombian ninguno_de_los_anteriores cogigo_barrio alguna_limitacin_si  alguna_limitacin_total limitacin_para_aprender limitacin_para_baarse limitacin_para_caminar limitacin_para_hablar limitacin_para_oir limitacin_para_ver limitacin_para_socializar limitacin_para_usar_brazos_o_man limitacin_para_otro sabe_leer_y_escribir_no_informa sabe_leer_y_escribir_total sabe_leer_y_escribir_15__24_aos_ v10 asistencia_educativa_ratio sabe_leer_y_escribir_ratio tasa_assistenciaesc_index_sum"
+	local indepenent  "temp_anom_median_c arean3210 estrato_mon3210 asistencia_educativa_0__4_aos_si preescolar bsica_primaria bsica_secundaria media_acadmica_clsica media_tcnica superior__y__postgrado _ninguno no_informa occupation_condition_ocupada_con v5 occupation_condition_desocupadas  occupation_condition_total tipo_de_vivienda_casa tipo_de_vivienda_apartamento  tipo_de_vivienda_otro_tipo vivienda_con_acueducto vivienda_con_alcantarillado vivienda_con_energia vivienda_con_gas vivienda_con_telefono cobertura_vivienda_con____acuedu cobertura_vivienda_con____alcant cobertura_vivienda_con____energi cobertura_vivienda_con____gas cobertura_vivienda_con____telefo industria comercio servicios otras_actividades unidades_auxiliares_tipo_gerenci unidades_auxiliares_diferentes_d desocupada trabaj no_trabaj_pero_tena_trabajo busc_trabajo_pero_haba_trabajado busc_trabajo_por_primera_vez estudi_y_no_trabaj_ni_busc_traba realiz_oficios_del_hogar_y_no_tr incapacitado_permanentemente_par vivi_de_jubilacin_o_renta_y_no_t estuvo_en_otra_situacin jefe_o_jefa_del_hogar conyuge__pareja_ hijo_a___hijastro_a_ yerno__nuera nieto_a_ padre__madre_o_suegro_a_ hermano_a___hermanastro_a_ otro_pariente empleado__a__domestico otro_no_pariente hijo_a__hijastro_a_ yerno_nuera padre_madre_o_suegro_a_ hermano_a__hermanastro_a_ nocasadoylleva2oaosviviendoparej nocasadoyllevade2aosviviendopare separado_a__divorciado_a_ viudo_a_ soltero_a_ casado_a_  indigena rom raizal palenquero negro__a___mulato__afrocolombian ninguno_de_los_anteriores cogigo_barrio alguna_limitacin_si  alguna_limitacin_total limitacin_para_aprender limitacin_para_baarse limitacin_para_caminar limitacin_para_hablar limitacin_para_oir limitacin_para_ver limitacin_para_socializar limitacin_para_usar_brazos_o_man limitacin_para_otro sabe_leer_y_escribir_no_informa sabe_leer_y_escribir_total sabe_leer_y_escribir_15__24_aos_ v10 asistencia_educativa_ratio sabe_leer_y_escribir_ratio tasa_assistenciaesc_index_sum"
 	stepwise, pr(.5) pe(.2): poisson `var' `indepenent'
 	outreg2 using poissontableseform.xls, append e(r2_p) eform 
 }
@@ -214,16 +218,16 @@ local indepenent  "total_pop  arean3210 estrato_mon3210  indigena rom raizal neg
 	outreg2 using regtables_indiceseform.xls, append  e(all)
 }
 */
-foreach var of varlist countzikabarrio countchikvbarrio countdenguebarrio  total_pop arean3210 estrato_mon3210 indigena rom raizal negro__a___mulato__afrocolombian ninguno_de_los_anteriores asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assistenciaesc_index_sum empty_ratio maletofemale{
+foreach var of varlist countzikabarrio countchikvbarrio countdenguebarrio  temp_anom_median_c total_pop arean3210 estrato_mon3210 indigena rom raizal negro__a___mulato__afrocolombian ninguno_de_los_anteriores asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assistenciaesc_index_sum empty_ratio maletofemale{
 histogram `var'
 graph export "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\histograms barrios\`var'.tif", width(4000) replace 
 }
-table1, vars(countzikabarrio contn\ countchikvbarrio contn\countdenguebarrio contn\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood'.xls", replace) missing test
+table1, by(month) vars(countzikabarrio conts\ countchikvbarrio conts\countdenguebarrio conts\ temp_anom_median_c conts\total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes.xls", replace) missing test
 
 *stepwise models poisson indices		
 touch poissontables_indiceseform.xls, replace
 foreach var in countdenguebarrio countchikvbarrio countzikabarrio{
-local indepenent  "total_pop arean3210 estrato_mon3210 indigena rom raizal negro__a___mulato__afrocolombian ninguno_de_los_anteriores asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assistenciaesc_index_sum empty_ratio maletofemale"
+local indepenent  "temp_anom_median_c total_pop arean3210 estrato_mon3210 indigena rom raizal negro__a___mulato__afrocolombian ninguno_de_los_anteriores asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assistenciaesc_index_sum empty_ratio maletofemale"
 	stepwise, pr(.49) pe(.1): poisson `var' `indepenent'
 	outreg2 using poissontables_indiceseform.xls, append e(r2_p) eform 
 }
@@ -250,7 +254,7 @@ rename POINT_X x
 rename POINT_Y y
 destring codigo_barrio, replace
 merge m:m codigo_barrio using merged_barrio_july72016
-keep codigo_barrio  x y countdenguebarrio countchikvbarrio countzikabarrio arean3210 estrato_mon3210  indigena rom raizal palenquero negro__a___mulato__afrocolombian ninguno_de_los_anteriores total_pop asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assistenciaesc_index_sum empty_ratio maletofemale total_pop arean3210 estrato_mon3210 asistencia_educativa_0__4_aos_si preescolar bsica_primaria bsica_secundaria media_acadmica_clsica media_tcnica superior__y__postgrado _ninguno no_informa occupation_condition_ocupada_con v5 occupation_condition_desocupadas  occupation_condition_total tipo_de_vivienda_casa tipo_de_vivienda_apartamento  tipo_de_vivienda_otro_tipo vivienda_con_acueducto vivienda_con_alcantarillado vivienda_con_energia vivienda_con_gas vivienda_con_telefono cobertura_vivienda_con____acuedu cobertura_vivienda_con____alcant cobertura_vivienda_con____energi cobertura_vivienda_con____gas cobertura_vivienda_con____telefo industria comercio servicios otras_actividades unidades_auxiliares_tipo_gerenci unidades_auxiliares_diferentes_d desocupada trabaj no_trabaj_pero_tena_trabajo busc_trabajo_pero_haba_trabajado busc_trabajo_por_primera_vez estudi_y_no_trabaj_ni_busc_traba realiz_oficios_del_hogar_y_no_tr incapacitado_permanentemente_par vivi_de_jubilacin_o_renta_y_no_t estuvo_en_otra_situacin jefe_o_jefa_del_hogar conyuge__pareja_ hijo_a___hijastro_a_ yerno__nuera nieto_a_ padre__madre_o_suegro_a_ hermano_a___hermanastro_a_ otro_pariente empleado__a__domestico otro_no_pariente hijo_a__hijastro_a_ yerno_nuera padre_madre_o_suegro_a_ hermano_a__hermanastro_a_ nocasadoylleva2oaosviviendoparej nocasadoyllevade2aosviviendopare separado_a__divorciado_a_ viudo_a_ soltero_a_ casado_a_  indigena rom raizal palenquero negro__a___mulato__afrocolombian ninguno_de_los_anteriores cogigo_barrio alguna_limitacin_si  alguna_limitacin_total limitacin_para_aprender limitacin_para_baarse limitacin_para_caminar limitacin_para_hablar limitacin_para_oir limitacin_para_ver limitacin_para_socializar limitacin_para_usar_brazos_o_man limitacin_para_otro sabe_leer_y_escribir_no_informa sabe_leer_y_escribir_total sabe_leer_y_escribir_15__24_aos_ v10 asistencia_educativa_ratio sabe_leer_y_escribir_ratio tasa_assistenciaesc_index_sum
+keep temp_anom_median_c mes anos codigo_barrio  x y countdenguebarrio countchikvbarrio countzikabarrio arean3210 estrato_mon3210  indigena rom raizal palenquero negro__a___mulato__afrocolombian ninguno_de_los_anteriores total_pop asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assistenciaesc_index_sum empty_ratio maletofemale total_pop arean3210 estrato_mon3210 asistencia_educativa_0__4_aos_si preescolar bsica_primaria bsica_secundaria media_acadmica_clsica media_tcnica superior__y__postgrado _ninguno no_informa occupation_condition_ocupada_con v5 occupation_condition_desocupadas  occupation_condition_total tipo_de_vivienda_casa tipo_de_vivienda_apartamento  tipo_de_vivienda_otro_tipo vivienda_con_acueducto vivienda_con_alcantarillado vivienda_con_energia vivienda_con_gas vivienda_con_telefono cobertura_vivienda_con____acuedu cobertura_vivienda_con____alcant cobertura_vivienda_con____energi cobertura_vivienda_con____gas cobertura_vivienda_con____telefo industria comercio servicios otras_actividades unidades_auxiliares_tipo_gerenci unidades_auxiliares_diferentes_d desocupada trabaj no_trabaj_pero_tena_trabajo busc_trabajo_pero_haba_trabajado busc_trabajo_por_primera_vez estudi_y_no_trabaj_ni_busc_traba realiz_oficios_del_hogar_y_no_tr incapacitado_permanentemente_par vivi_de_jubilacin_o_renta_y_no_t estuvo_en_otra_situacin jefe_o_jefa_del_hogar conyuge__pareja_ hijo_a___hijastro_a_ yerno__nuera nieto_a_ padre__madre_o_suegro_a_ hermano_a___hermanastro_a_ otro_pariente empleado__a__domestico otro_no_pariente hijo_a__hijastro_a_ yerno_nuera padre_madre_o_suegro_a_ hermano_a__hermanastro_a_ nocasadoylleva2oaosviviendoparej nocasadoyllevade2aosviviendopare separado_a__divorciado_a_ viudo_a_ soltero_a_ casado_a_  indigena rom raizal palenquero negro__a___mulato__afrocolombian ninguno_de_los_anteriores cogigo_barrio alguna_limitacin_si  alguna_limitacin_total limitacin_para_aprender limitacin_para_baarse limitacin_para_caminar limitacin_para_hablar limitacin_para_oir limitacin_para_ver limitacin_para_socializar limitacin_para_usar_brazos_o_man limitacin_para_otro sabe_leer_y_escribir_no_informa sabe_leer_y_escribir_total sabe_leer_y_escribir_15__24_aos_ v10 asistencia_educativa_ratio sabe_leer_y_escribir_ratio tasa_assistenciaesc_index_sum
 drop if codigo_barrio  ==.
 rename negro__a___mulato__afrocolombian negro__a___mulato__afro
 rename tasa_assistenciaesc_index_sum tasa_assist_index_sum
@@ -284,7 +288,7 @@ foreach disease in countzikabarrio	countchikvbarrio	countdenguebarrio{
 replace `disease'=0 if `disease'==.
 }
 drop nocasado_2oaosin_parej	nocasadoyllevade2aosviviendopare cogigo_barrio
-outsheet using "C:\Users\Amy\Desktop\gwr4\disease_counts.csv", comma nolabel replace
+outsheet using "C:\Users\Amy\Desktop\gwr4\disease_counts_mes.csv", comma nolabel replace
 /*
 summarize x y 
 display sqrt(( 97315.61 - 115493.7)^2 + (105547.3 - 118912.8)^2)
