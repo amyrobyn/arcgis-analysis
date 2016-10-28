@@ -28,4 +28,9 @@ replace month = 11 if rain_month == 1114 |rain_month == 1115
 replace month = 12 if rain_month == 1214 |rain_month == 1215
  
 tab year month
+destring *, replace
+
+egen barrio_month = concat(ID_BARRIO month year)
+duplicates drop barrio_month, force
+
 save "C:\Users\Amy\Google Drive\avg_rain\rain_months.dta", replace
