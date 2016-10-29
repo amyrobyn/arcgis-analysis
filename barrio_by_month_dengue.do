@@ -164,7 +164,7 @@ replace year = 2015 if year ==15
 replace year = 2016 if year ==16
 
 
-table1, by(monthyear) vars(temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes`dataset'.xls", replace) missing test
+table1, by(monthyear) vars(temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
 outsheet using "C:\Users\Amy\Desktop\gwr4\disease_counts_mes.csv", comma nolabel replace
 
 /*
@@ -211,8 +211,8 @@ foreach var in countdenguebarrio countchikvbarrio countzikabarrio{
 
 *export
 *use temp, clear
-order codigo_barrio count`dataset'barrio
-sort count`dataset'barrio
+*order codigo_barrio count`dataset'barrio
+*sort count`dataset'barrio
 export excel using "neighborhood_GWR_indices`dataset'", firstrow(variables) replace
 
 capture drop _merge
@@ -260,11 +260,11 @@ drop `var'_avg
 }
 
 
-replace count`dataset'barrio=0 if ==.
+*replace count`dataset'barrio=0 if ==.
 
 
 drop nocasado_2oaosin_parej	nocasadoyllevade2aosviviendopare cogigo_barrio
-outsheet using "C:\Users\Amy\Desktop\gwr4\disease_counts_mes.csv", comma nolabel replace
+outsheet using "C:\Users\Amy\Desktop\gwr4\disease_counts_mes`dataset'.csv", comma nolabel replace
 
 /*
 summarize x y 
@@ -283,4 +283,32 @@ variog2 av8top lat lon, width(.1) lags(12) list
 variog2  av8top lat lon, width(.15) lags(10) list
 */
 *twoway (line Avg_rain monthyear, sort jitter(0 7)) (scatter count`dataset'barrio monthyear, sort jitter(relativesize)) (line temp_anom_median_c monthyear, jitter(relativesize))
+sort barrio_month
+save merge102816`dataset', replace
+duplicates drop barrio_month, force
 }
+capture drop _merge
+merge 1:1 barrio_month using "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816zika" 
+capture drop _merge
+merge 1:1 barrio_month using  "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816chik"
+save merged_barrios_rain_temp_diseases, replace
+export excel using "merged_102816", firstrow(variables) replace
+
+use merged_barrios_rain_temp_diseases
+destring monthyear, replace
+gen monthtime = month
+replace monthtime = month + 12 if year ==2015
+replace monthtime = month + 24 if year ==2016
+xtset codigo_barrio monthtime, monthly
+
+*selected models
+local indepenent  "Avg_rain temp_anom_median_c total_pop arean3210 estrato_mon3210 asistencia_educativa_ratio sabe_leer_y_escribir_ratio services_coverage_index_sum empty_ratio maletofemale"
+touch poissontables_indiceseform_long.xls, replace
+foreach var in  countchikdtabarrio countzikadtabarrio  countdenguedtabarrio {
+*xtgee `var' Avg_rain ESTRA_MODA temp_anom_median_c maletofemale empty_ratio alguna_limitacin_ratio asistencia_educativa_ratio, family(poisson) link(identity) corr(exchangeable) eform
+xtgee `var' `indepenent' , family(poisson) link(identity) corr(exchangeable) eform
+estat vce
+outreg2 using poissontables_indiceseform_long.xls, append e(r2_p) eform 
+}
+
+

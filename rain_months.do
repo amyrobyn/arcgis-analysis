@@ -1,6 +1,6 @@
 import excel "C:\Users\Amy\Google Drive\avg_rain\rain_months.xls", sheet("rain_months") firstrow clear
 save "C:\Users\Amy\Google Drive\avg_rain\rain_months.dta", replace
-keep ID_BARRIO BARRIO COMUNA ESTRA_MODA Avg_rain*
+keep ID_BARRIO BARRIO COMUNA ESTRA_MODA Avg_rain*  POINT_X POINT_Y
 sum
 save "C:\Users\Amy\Google Drive\avg_rain\rain_months.dta", replace
 reshape long Avg_rain, i(ID_BARRIO) j(rain_month)
@@ -11,6 +11,7 @@ tostring rain_month, replace
 gen year = "."
 replace year = substr(rain_month,-2,.)
 destring year, replace
+replace year = 2000+year
 
 destring rain_month, replace
 gen month =.
