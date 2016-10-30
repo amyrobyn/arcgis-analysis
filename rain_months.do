@@ -1,8 +1,8 @@
-import excel "C:\Users\Amy\Google Drive\avg_rain\rain_months.xls", sheet("rain_months") firstrow clear
-save "C:\Users\Amy\Google Drive\avg_rain\rain_months.dta", replace
+import excel "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rain_months.xls", sheet("rain_months") firstrow clear
+save "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rain_months.dta", replace
 keep ID_BARRIO BARRIO COMUNA ESTRA_MODA Avg_rain*  POINT_X POINT_Y
 sum
-save "C:\Users\Amy\Google Drive\avg_rain\rain_months.dta", replace
+save "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rain_months.dta", replace
 reshape long Avg_rain, i(ID_BARRIO) j(rain_month)
 drop Avg_rain915_1
 
@@ -34,4 +34,4 @@ destring *, replace
 egen barrio_month = concat(ID_BARRIO month year)
 duplicates drop barrio_month, force
 
-save "C:\Users\Amy\Google Drive\avg_rain\rain_months.dta", replace
+save "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rain_months.dta", replace

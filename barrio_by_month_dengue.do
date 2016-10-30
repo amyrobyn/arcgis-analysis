@@ -1,11 +1,11 @@
 /****************************************************
- *Amy Krystosik                  					*
+ *Amykr Krystosik                  					*
  *chikv, dengue, and zika in cali, colombia       	*
  *PHD dissertation- arcgis analysis only               *
  *last updated July 29, 2016 
  * FILE NAME: neighborhood_data_july29.do* 
  ***************************************************/
-cd "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models"
+cd "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models"
 capture log close 
 log using "arcgis_analysis_only_oct_26_2016_mes.smcl", text replace 
 set scrollbufsize 100000
@@ -59,7 +59,7 @@ foreach dataset in "ed_level_approved_barrio.csv" "education_barrio.csv" "houses
 		drop if codigo_barrio ==.
 		save "cases_barrio.dta",  replace
 
-use "C:\Users\Amy\OneDrive\epi analysis\temp3.dta", clear 			
+use "C:\Users\Amykr\OneDrive\epi analysis\temp3.dta", clear 			
 			destring cod_barrio, replace
 			drop if cod_barrio ==.
 	rename CODIGO codigo
@@ -151,11 +151,11 @@ gen maletofemale = male_pop/female_pop
 
 drop _merge
 tostring monthyear, replace
-merge m:1 monthyear using "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\temperature_data_raw\temp_anomoly_2014-2016.dta"
+merge m:1 monthyear using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\temperature_data_raw\temp_anomoly_2014-2016.dta"
 drop _merge
 
 egen barrio_month = concat(codigo_barrio month year)
-merge m:1 barrio_month using "C:\Users\Amy\Google Drive\avg_rain\rain_months.dta"
+merge m:1 barrio_month using "C:\Users\Amykr\Google Drive\avg_rain\rain_months.dta"
 *reshape long
 save temp.dta, replace
 
@@ -164,8 +164,8 @@ replace year = 2015 if year ==15
 replace year = 2016 if year ==16
 
 
-table1, by(monthyear) vars(temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
-outsheet using "C:\Users\Amy\Desktop\gwr4\disease_counts_mes.csv", comma nolabel replace
+table1, by(monthyear) vars(temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
+outsheet using "C:\Users\Amykr\Desktop\gwr4\disease_counts_mes.csv", comma nolabel replace
 
 /*
 *stepwise regression models		
@@ -218,7 +218,7 @@ export excel using "neighborhood_GWR_indices`dataset'", firstrow(variables) repl
 capture drop _merge
 save merged_barrio_july72016`dataset'.dta, replace	
 /*
-import excel "C:\Users\Amy\Desktop\gwr4\points2.xls", sheet("points2") firstrow clear
+import excel "C:\Users\Amykr\Desktop\gwr4\points2.xls", sheet("points2") firstrow clear
 keep dengue_ID_BARRIO POINT_X POINT_Y
 rename dengue_ID_BARRIO  codigo_barrio
 rename POINT_X x
@@ -264,7 +264,7 @@ drop `var'_avg
 
 
 drop nocasado_2oaosin_parej	nocasadoyllevade2aosviviendopare cogigo_barrio
-outsheet using "C:\Users\Amy\Desktop\gwr4\disease_counts_mes`dataset'.csv", comma nolabel replace
+outsheet using "C:\Users\Amykr\Desktop\gwr4\disease_counts_mes`dataset'.csv", comma nolabel replace
 
 /*
 summarize x y 
@@ -288,9 +288,9 @@ save merge102816`dataset', replace
 duplicates drop barrio_month, force
 }
 capture drop _merge
-merge 1:1 barrio_month using "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816zika" 
+merge 1:1 barrio_month using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816zika" 
 capture drop _merge
-merge 1:1 barrio_month using  "C:\Users\Amy\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816chik"
+merge 1:1 barrio_month using  "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816chik"
 save merged_barrios_rain_temp_diseases, replace
 export excel using "merged_102816", firstrow(variables) replace
 
