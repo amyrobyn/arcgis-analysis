@@ -37,6 +37,15 @@ foreach dataset in "pop_total_sex_barrio.csv" "ed_level_approved_barrio.csv" "ed
 			use barrios.csv.dta, clear
 
 		merge 1:1 codigo_barrio using school_assistence_barrio.csv.dta
+		drop _merge
+		save merged_barrio.dta, replace
+		
+		import excel "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\canals\distance_m.xls", sheet("distance_m") firstrow clear
+		keep barriosID_BARRIO dist_barrio_canal_m dist_water_barrio_m
+		rename barriosID_BARRIO  codigo_barrio 
+		destring codigo_barrio, replace
+		save "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\canals\dist_canal_water_barrio.dta", replace
+		merge 1:1 codigo_barrio using merged_barrio.dta
 		save merged_barrio.dta, replace
 	
 *merge barrio data**	
@@ -133,6 +142,7 @@ egen services_index_sum= rowtotal(vivienda_con_acueducto vivienda_con_alcantaril
 
 egen services_coverage_index_sum= rowtotal(cobertura_vivienda_con____acuedu cobertura_vivienda_con____alcant cobertura_vivienda_con____energi cobertura_vivienda_con____gas cobertura_vivienda_con____telefo)
 
+
 ds, has(type string) 
 foreach var of varlist `r(varlist)' { 
 replace `var' = "." if `var' =="NA"
@@ -155,7 +165,7 @@ merge m:1 monthyear using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\c
 drop _merge
 
 egen barrio_month = concat(codigo_barrio month year)
-merge m:1 barrio_month using "C:\Users\Amykr\Google Drive\avg_rain\rain_months.dta"
+merge m:1 barrio_month using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rain_months.dta"
 *reshape long
 save temp.dta, replace
 
@@ -164,9 +174,7 @@ replace year = 2015 if year ==15
 replace year = 2016 if year ==16
 
 
-table1, by(monthyear) vars(temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
-outsheet using "C:\Users\Amykr\Desktop\gwr4\disease_counts_mes.csv", comma nolabel replace
-
+table1, by(monthyear) vars(dist_barrio_canal_m conts\ dist_water_barrio_m conts\ temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afrocolombian conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\empty_ratio conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
 /*
 *stepwise regression models		
  touch regtableseform.xls, replace
@@ -251,20 +259,39 @@ rename nocasadoylleva2oaosviviendoparej nocasado_2oaosin_parej
 rename limitacin_para_usar_brazos_o_man limit_usar_brazos_o_man
 rename sabe_leer_y_escribir_no_informa sabe_leer_y_escribir
 rename sabe_leer_y_escribir_15__24_aos_ sabe_leer_escribir_15__24
+drop if codigo_barrio ==.
+rename asistencia_educativa_ratio educ_ratio
+*drop asistencia_educativa_0__4_aos_no asistencia_educativa_11__16_aos asistencia_educativa_6__10_aos_n asistencia_educativa_6__10_aos_s2 asistencia_educativa_11__14_aos_ 
+*drop asistencia_educativa_* tasa_de_asistencia_escolar_* occupation_cond* nocasadoyllevade2aosviviendopa*
 
-foreach var in Avg_rain arean3210 estrato_mon3210 indigena rom raizal palenquero negro__a___mulato__afro ninguno_de_los_anteriores total_pop asistencia_educativa_ratio alguna_limitacin_ratio sabe_leer_y_escribir_ratio services_index_sum services_coverage_index_sum tasa_assist_index_sum empty_ratio maletofemale asist_educ_0__4_aos_si preescolar bsica_primaria bsica_secundaria media_acadmica_clsica media_tcnica superior__y__postgrado _ninguno no_informa occupation_ocupada_con v5 occupation_desocupadas  occupation_condition_total tipo_de_vivienda_casa tipo_de_vivienda_apartamento  tipo_de_vivienda_otro_tipo vivienda_con_acueducto vivienda_con_alcantarillado vivienda_con_energia vivienda_con_gas vivienda_con_telefono cobertura_acuedu cobertura_alcant cobertura_energi cobertura_gas cobertura_telefo industria comercio servicios otras_actividades unidades_aux_tipo_gerenci unidades_aux_diferentes_d desocupada trabaj no_trabaj_pero_tena_trabajo busc_trabajo_trabajado busc_trabajo_primera_vez estudi_no_trabaj_ni_busc oficios_hogar incap_perm vivi_de_jubilacin estuvo_en_otra_situacin jefe_o_jefa_del_hogar conyuge__pareja_ hijo_a___hijastro_a_ yerno__nuera nieto_a_ padre__madre_o_suegro_a_ hermano_a___hermanastro_a_ otro_pariente empleado__a__domestico otro_no_pariente hijo_a__hijastro_a_ yerno_nuera padre_madre_o_suegro_a_ hermano_a__hermanastro_a_ separado_a__divorciado_a_ viudo_a_ soltero_a_ casado_a_   alguna_limitacin_total limitacin_para_aprender limitacin_para_baarse limitacin_para_caminar limitacin_para_hablar limitacin_para_oir limitacin_para_ver limitacin_para_socializar limit_usar_brazos_o_man limitacin_para_otro sabe_leer_y_escribir sabe_leer_y_escribir_total sabe_leer_escribir_15__24 v10 alguna_limitacin_si{ 
+foreach var in Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale alguna_limitacin_ratio tasa_assist_index_sum services_index_sum indigena rom raizal  negro__a___mulato__afro ninguno_de_los_anteriores dist_barrio_canal_m month year{
 capture destring `var', replace
-egen `var'_avg = mean(`var')
-replace `var' = `var'_avg if `var'==.
-drop `var'_avg
-}
+						egen `var'2 = mean(`var')
+						replace `var' = `var'2 if `var'==.
+						drop `var'2
+
+recast int month, force
+recast int year, force
+			}
 
 
 *replace count`dataset'barrio=0 if ==.
 
 
-drop nocasado_2oaosin_parej	nocasadoyllevade2aosviviendopare cogigo_barrio
-outsheet using "C:\Users\Amykr\Desktop\gwr4\disease_counts_mes`dataset'.csv", comma nolabel replace
+*drop nocasado_2oaosin_parej	nocasadoyllevade2aosviviendopare cogigo_barrio 
+order count* POINT_X POINT_Y Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale
+outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\gwr4\disease_counts_mes`dataset'.csv", comma nolabel replace
+preserve
+collapse (sum) count*, by(codigo_barrio)
+save count`dataset', replace
+restore
+preserve
+collapse (mean) POINT_X POINT_Y Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale alguna_limitacin_ratio  tasa_assist_index_sum services_index_sum indigena rom raizal  negro__a___mulato__afro ninguno_de_los_anteriores dist_barrio_canal_m, by(codigo_barrio)
+merge 1:1 codigo_barrio using count`data'
+drop _merge POINT_X POINT_Y 
+merge 1:1 codigo_barrio using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rxy.dta"
+outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\gwr4\disease_counts`dataset'.csv", comma nolabel replace
+restore
 
 /*
 summarize x y 
@@ -283,11 +310,14 @@ variog2 av8top lat lon, width(.1) lags(12) list
 variog2  av8top lat lon, width(.15) lags(10) list
 */
 *twoway (line Avg_rain monthyear, sort jitter(0 7)) (scatter count`dataset'barrio monthyear, sort jitter(relativesize)) (line temp_anom_median_c monthyear, jitter(relativesize))
+drop barrio_month 
+egen barrio_month = concat(codigo_barrio month year)
 sort barrio_month
 save merge102816`dataset', replace
 duplicates drop barrio_month, force
 }
 capture drop _merge
+
 merge 1:1 barrio_month using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816zika" 
 capture drop _merge
 merge 1:1 barrio_month using  "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816chik"
@@ -302,13 +332,39 @@ replace monthtime = month + 24 if year ==2016
 xtset codigo_barrio monthtime, monthly
 
 *selected models
-local indepenent  "Avg_rain temp_anom_median_c total_pop arean3210 estrato_mon3210 asistencia_educativa_ratio sabe_leer_y_escribir_ratio services_coverage_index_sum empty_ratio maletofemale"
-touch poissontables_indiceseform_long.xls, replace
-foreach var in  countchikdtabarrio countzikadtabarrio  countdenguedtabarrio {
+bysort countdenguedtabarrio countchikdtabarrio countzikadtabarrio: sum Avg_rain temp_anom_median_c total_pop arean3210 estrato_mon3210 educ_ratio sabe_leer_y_escribir_ratio services_coverage_index_sum empty_ratio maletofemale
+
+*local indepenent "Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale" 
+*POINT_X POINT_Y 
+local indepenent "Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale alguna_limitacin_ratio tasa_assist_index_sum services_index_sum indigena rom raizal  negro__a___mulato__afro ninguno_de_los_anteriores dist_barrio_canal_m"
+touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\poissontables_indiceseform_long.xls, replace
+foreach var in  countdenguedtabarrio  countchikdtabarrio countzikadtabarrio{
 *xtgee `var' Avg_rain ESTRA_MODA temp_anom_median_c maletofemale empty_ratio alguna_limitacin_ratio asistencia_educativa_ratio, family(poisson) link(identity) corr(exchangeable) eform
-xtgee `var' `indepenent' , family(poisson) link(identity) corr(exchangeable) eform
+xtgee `var' `indepenent' , family(poisson) link(log) corr(exchangeable) eform
 estat vce
+estat wcorrelation
+estat summarize
 outreg2 using poissontables_indiceseform_long.xls, append e(r2_p) eform 
 }
 
 
+graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
+/*
+graph twoway
+countdenguedtabarrio countzikadtabarrio countchikdtabarrio
+||graph bar (mean) Avg_rain temp_anom_median_c  countdenguedtabarrio countzikadtabarrio countchikdtabarrio, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
+
+
+
+
+							collapse (sum) countdenguedtabarrio  (count) n=countdenguedtabarrio  (sd) sdcountdenguedtabarrio =countdenguedtabarrio , by(month year)
+							egen axis = axis(month year)
+							generate hicountdenguedtabarrio = countdenguedtabarrio  + invttail(n-1,0.025)*(sdcountdenguedtabarrio / sqrt(n))
+							generate locountdenguedtabarrio = countdenguedtabarrio - invttail(n-1,0.025)*(sdcountdenguedtabarrio / sqrt(n))
+
+graph twoway ///
+						   || (bar Avg_rain axis, sort )(rcap hiAvg_rain  loAvg_rain  axis) ///
+						   || scatter countdenguedtabarrio axis, ms(i) mlab(n) mlabpos(2) mlabgap(2) mlabangle(45) mlabcolor(black) mlabsize(4) ///
+						   || , by(month) ylabel(, format(%5.4f)) ymtick(#4,  tlength(scheme tick)) legend(label(1 "`failvar'") label(2 "95% CI")) xlabel(1(1)4, valuelabel  angle(45))  title(`dataset' by cohort and city)
+							graph export "`dataset'`failvar'citycohort.tif", width(4000) replace 
+*/
