@@ -68,6 +68,14 @@ foreach dataset in "ed_level_approved_barrio.csv" "education_barrio.csv" "houses
 		drop if codigo_barrio ==.
 		save "cases_barrio.dta",  replace
 
+/*		sort codigo_barrio, stable
+		set seed 260581
+			sample 75*/
+		save "cases_barrio.dta",  replace
+/*		set seed 260581
+			sample 25
+		save 25cases_barrio.dta, replace*/
+	
 use "C:\Users\Amykr\OneDrive\epi analysis\temp3.dta", clear 			
 			destring cod_barrio, replace
 			drop if cod_barrio ==.
