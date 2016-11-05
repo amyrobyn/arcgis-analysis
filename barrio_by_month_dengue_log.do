@@ -444,22 +444,57 @@ foreach var in  countdenguedtabarrio  countchikdtabarrio countzikadtabarrio{
 *local indepenent "Avg_rain ESTRA_MODA temp_anom_median_c maletofemale empty_ratio alguna_limitacin_ratio educ_ratio"
 *local indepenent "Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale dist_barrio_canal_m dist_water_barrio_m negro__a___mulato__afro"
 *local indepenent "Avg_rain temp_anom_median_c services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale cod_comunac2 perimetron3210 asistencia_educativa_si asistencia_educativa_no asistencia_educativa_no_informa asistencia_educativa_total asist_educ_0__4_aos_si asistencia_educativa_0__4_aos_no asistencia_educativa_5_aos_si asistencia_educativa_5_aos_no asistencia_educativa_11__16_aos_ asistencia_educativa_6__10_aos_n asistencia_educativa_6__10_aos_s v15 asistencia_educativa_11__14_aos_ v17 asistencia_educativa_15__16_aos_ v19 asistencia_educativa_17__21_aos_ v21 asistencia_educativa_24_aos_y_ms v23 tasa_de_asistencia_escolar_5 tasa_de_asistencia_escolar_6__10 tasa_de_asistencia_escolar_11__1 v27 tasa_de_asistencia_escolar_15__1 tasa_de_asistencia_escolar_5__16 tasa_de_asistencia_escolar_17__2 codigo_unico prejardin jardin transicin bsicaprimaria_1 bsicaprimaria_2 bsicaprimaria_3 bsicaprimaria_4 bsicaprimaria_5 bsicasecundaria_6 bsicasecundaria_7 bsicasecundaria_8 bsicasecundaria_9 mediaacadmicaclsica_10 mediaacadmicaclsica_11 mediatcnica_10 mediatcnica_11 normalista_10 normalista_11 normalista_12 normalista_13 superiorypostgrado ninguno nivelyaoinvalido noinforma total preescolar bsica_primaria bsica_secundaria media_acadmica_clsica media_tcnica normalista superior__y__postgrado _ninguno no_informa occupation_ocupada_con v5 occupation_desocupadas occupation_condition_desocupada_ occupation_condition_total tipo_de_vivienda_casa tipo_de_vivienda_apartamento tipo_de_vivienda_tipo_cuarto tipo_de_vivienda_otro_tipo vivienda_con_acueducto vivienda_con_alcantarillado vivienda_con_energia vivienda_con_gas vivienda_con_telefono cobertura_acuedu cobertura_alcant cobertura_energi cobertura_gas cobertura_telefo industria comercio servicios otras_actividades unidades_aux_tipo_gerenci unidades_aux_diferentes_d desocupada trabaj no_trabaj_pero_tena_trabajo busc_trabajo_trabajado busc_trabajo_primera_vez estudi_no_trabaj_ni_busc oficios_hogar incap_perm vivi_de_jubilacin estuvo_en_otra_situacin communa estrata_1 estrata_2 estrata_3 estrata_4 estrata_5 estrata_6 estrata_moda jefe_o_jefa_del_hogar conyuge__pareja_ hijo_a___hijastro_a_ yerno__nuera nieto_a_ padre__madre_o_suegro_a_ hermano_a___hermanastro_a_ otro_pariente empleado__a__domestico otro_no_pariente hijo_a__hijastro_a_ yerno_nuera padre_madre_o_suegro_a_ hermano_a__hermanastro_a_ codigounico nocasado_2oaosin_parej nocasadoyllevade2aosviviendopare separado_a__divorciado_a_ viudo_a_ soltero_a_ casado_a_ indigena rom raizal palenquero negro__a___mulato__afro ninguno_de_los_anteriores alguna_limitacin_si alguna_limitacin_no alguna_limitacin_total limitacin_para_aprender limitacin_para_baarse limitacin_para_caminar limitacin_para_hablar limitacin_para_oir limitacin_para_ver limitacin_para_socializar limit_usar_brazos_o_man limitacin_para_otro sabe_leer_y_escribir_si sabe_leer_y_escribir_no sabe_leer_y_escribir sabe_leer_y_escribir_total sabe_leer_escribir_15__24 v9 v10 monthyear oid male_pop female_pop viviendas chikttlpop alguna_limitacin_ratio ed_index_sum services_index_sum tasa_assist_index_sum home_occupied home_occupied_perc home_empty home_empty_perc month year rain_month COMUNA ESTRA_MODA Avg_rain115_1 Avg_rain116_1 Avg_rain915_2 monthtime"
+*local indepenent "single home_p cobertura_acuedu cobertura_alcant cobertura_energi unemp total_pop arean3210 templag1 rainlag1 dist_barrio_canal_m negro__a___mulato__afrop  Avg_rain temp_anom_median_c assist_educ_P alguna_limit_p sabe_leer_y_escribir_p ed_index_sum services_index_sum services_coverage_index_sum tasa_assist_index_sum home_empty_p  estrato_mon3210 male_p"
 
-local indepenent "single  home_p cobertura_acuedu cobertura_alcant cobertura_energi unemp total_pop arean3210 templag1 rainlag1  dist_barrio_canal_m negro__a___mulato__afrop  Avg_rain temp_anom_median_c assist_educ_P alguna_limit_p sabe_leer_y_escribir_p ed_index_sum services_index_sum services_coverage_index_sum tasa_assist_index_sum home_empty_p  estrato_mon3210 male_p"
-stepwise, pr(.2) pe(.1) : poisson  `var'  `indepenent', vce(robust) 
-*xtgee `var' Avg_rain ESTRA_MODA temp_anom_median_c maletofemale empty_ratio alguna_limitacin_ratio educ_ratio, family(poisson) link(identity) corr(exchangeable) eform
+local indepenent "single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  rainlag1  temp_anom_median_c templag1 dist_barrio_canal_m negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
+stepwise, pr(.1) pe(.05) : poisson  `var'  `indepenent', vce(robust) 
 xtgee `var' `indepenent' , vce(robust) family(poisson) link(log) corr(ar 1) eform
+
 estat vce
 estat wcorrelation
 estat summarize
-
-capture drop `var'p
-predict `var'p if e(sample) 
-corr `var' `var'p if e(sample) 
+capture drop countdenguedtabarriop
+predict countdenguedtabarriop if e(sample) 
+corr countdenguedtabarrio   countdenguedtabarriop if e(sample) 
 di r(rho)^2
-
 outreg2 using poissontables_indiceseform_long.xls, append e(r2_p) eform 
 }
+
+local indepenent "single home_p cobertura_alcant cobertura_energi arean3210 templag1 rainlag1 dist_barrio_canal_m negro__a___mulato__afrop  Avg_rain temp_anom_median_c assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
+xtgee countdenguedtabarrio  `indepenent' , vce(robust) family(poisson) link(log) corr(ar 1) eform
+estat vce
+estat wcorrelation
+estat summarize
+capture drop countdenguedtabarriop
+predict countdenguedtabarriop if e(sample) 
+corr countdenguedtabarrio   countdenguedtabarriop if e(sample) 
+di r(rho)^2
+
+local indepenent "cobertura_energi arean3210 negro__a___mulato__afrop  Avg_rain temp_anom_median_c ed_index_sum services_coverage_index_sum male_p"
+xtgee countzikadtabarrio `indepenent' , vce(robust) family(poisson) link(log) corr(ar 1) eform
+estat vce
+estat wcorrelation
+estat summarize
+capture drop countzikadtabarriop
+predict countzikadtabarriop if e(sample) 
+corr countzikadtabarrio countzikadtabarriop if e(sample) 
+di r(rho)^2
+
+
+local indepenent "cobertura_energi arean3210 rainlag1 Avg_rain temp_anom_median_c ed_index_sum services_coverage_index_sum tasa_assist_index_sum "
+xtgee countzikadtabarrio `indepenent' , vce(robust) family(poisson) link(log) corr(ar 1) eform
+estat vce
+estat wcorrelation
+estat summarize
+capture drop countzikadtabarriop
+predict countzikadtabarriop if e(sample) 
+corr countzikadtabarrio countzikadtabarriop if e(sample) 
+di r(rho)^2
+
+
+
+outreg2 using poissontables_indiceseform_long.xls, append e(r2_p) eform 
+
 
 
 graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
