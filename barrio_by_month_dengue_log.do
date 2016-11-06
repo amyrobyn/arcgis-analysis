@@ -68,36 +68,16 @@ foreach dataset in "ed_level_approved_barrio.csv" "education_barrio.csv" "houses
 		drop if codigo_barrio ==.
 		save "cases_barrio.dta",  replace
 
-/*		sort codigo_barrio, stable
-		set seed 260581
-			sample 75*/
-		save "cases_barrio.dta",  replace
-/*		set seed 260581
-			sample 25
-		save 25cases_barrio.dta, replace*/
 	
 use "C:\Users\Amykr\OneDrive\epi analysis\temp3.dta", clear 			
-			destring cod_barrio, replace
-			drop if cod_barrio ==.
+	destring cod_barrio, replace
+	drop if cod_barrio ==.
 	rename CODIGO codigo
 	capture drop _merge
 	merge 1:1 codigo using "cases_barrio.dta"
 	capture drop _merge
-	save merged_barrio_cases.dta, replace
 	
-use "merged_barrio_cases.dta", clear
-		keep if cod_eve == 895
-		save zika.dta, replace	
-use "merged_barrio_cases.dta", clear
-		keep if cod_eve == 217
-		save chik.dta, replace	
-use "merged_barrio_cases.dta", clear
-		keep if cod_eve == 210|  cod_eve==220|cod_eve==580
-		save dengue.dta, replace	
-
-foreach dataset in "zika" "chik" "dengue"{ 
-		use `dataset', clear
-		gen mes=.
+	gen mes=.
 		replace mes = 12 if semana <=53
 		replace mes = 11 if semana <=48
 		replace mes = 10 if semana <=44
@@ -111,14 +91,35 @@ foreach dataset in "zika" "chik" "dengue"{
 		replace mes = 2 if semana <=8
 		replace mes = 1 if semana >=1 & semana <=4
 
+		rename mes month
+		rename anos year
+		egen monthyear = concat(month year)
+		
+	save merged_barrio_cases.dta, replace
+	
+use "merged_barrio_cases.dta", clear
+		keep if cod_eve == 895| cod_eve ==.
+		save zika.dta, replace	
+use "merged_barrio_cases.dta", clear
+		keep if cod_eve == 217| cod_eve ==.
+		save chik.dta, replace	
+use "merged_barrio_cases.dta", clear
+		keep if cod_eve == 210|  cod_eve==220|cod_eve==580| cod_eve ==.
+		save dengue.dta, replace	
+use "merged_barrio_cases.dta", clear
+		keep if cod_eve == . 
+		save nodisease.dta, replace	
+
+foreach dataset in "zika" "chik" "dengue"{ 
+		use `dataset', clear
+			
 		destring cod_barrio, replace
 		local i = `i' + 1
 		capture drop casecount
 		gen casecount = 1
+		replace casecount = 0 if cod_eve ==.
 		rename casecount casecount`i'
-		rename mes month
-		rename anos year
-		egen monthyear = concat(month year)
+		
 		collapse (sum) casecount, by(codigo_barrio monthyear)
 		replace casecount`i' = 0 if casecount`i' ==.
 		*reshape wide casecount`i' , i(codigo_barrio) j(monthyear) s 
@@ -227,23 +228,28 @@ rename sabe_leer_y_escribir_15__24_aos_ sabe_leer_escribir_15__24
 drop if codigo_barrio ==.
 
 gen  negro__a___mulato__afrop =  negro__a___mulato__afro/total_pop
-gen unem_p= occupation_condition_desocupada_ /occupation_condition_total
+
+
+sum occupation_desocupadas occupation_condition_desocupada_ occupation_ocupada_con occupation_condition_total desocupada
+gen unem_p = desocupada/total_pop
+*gen unem_p= occupation_condition_desocupada_ /occupation_condition_total
 gen home_p= oficios_hogar/total_pop
 gen single_p = soltero_a_/total_pop
 
 
-
-foreach var in unem_p home_p single_p  negro__a___mulato__afrop  assist_educ_P  serv_cov_index  alguna_limit_p literate_p ed_index_sum services_index assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain{
+foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain {
 						capture destring `var', replace
-						egen b`var'b = mean(`var')
-						replace `var' = b`var'b if `var'==.
-						drop b`var'b
+						egen `var'b = mean(`var')
+						replace `var' = `var'b if `var'==.
+						drop `var'b
 						
 						replace `var' = . if `var'==0
 
 			}
+			
 	recast int month, force
 	recast int year, force
+	recast int estrato_mon3210, force
 
 *order count* POINT_X POINT_Y Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale
 outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\gwr4\disease_counts_mes`dataset'.csv", comma nolabel replace
@@ -254,7 +260,7 @@ restore
 preserve
 collapse (mean) POINT_X POINT_Y serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain , by(codigo_barrio)
 
-merge 1:1 codigo_barrio using count`data'
+merge 1:1 codigo_barrio using count`dataset'
 drop _merge POINT_X POINT_Y 
 merge 1:1 codigo_barrio using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rxy.dta"
 outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\gwr4\disease_counts`dataset'.csv", comma nolabel replace
@@ -263,11 +269,11 @@ restore
 drop barrio_month 
 egen barrio_month = concat(codigo_barrio month year)
 sort barrio_month
-save merge102816`dataset', replace
+drop barrio
 duplicates drop barrio_month, force
+save merge102816`dataset', replace
 }
 capture drop _merge
-
 merge 1:1 barrio_month using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816zika" 
 capture drop _merge
 merge 1:1 barrio_month using  "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816chik"
@@ -289,6 +295,7 @@ summarize `var', meanonly
 gen anm_`var' = `var' - r(mean)
 gen l1anm_`var' = L.anm_`var'
 gen l2anm_`var' = L.l1anm_`var'
+
 foreach disaease in countdenguedtabarrio countzikadtabarrio countzikadtabarrio{ 
 xtserial  `disaease' `var' 
 xtserial  `disaease' anm_`var' 
@@ -297,6 +304,7 @@ xtserial  `disaease'  l2anm_`var'
 }
 }
 
+gen rainlag1= L.Avg_rain
 gen templag1= L.temp_anom_median_c
 
 rename hogares2 hogar
@@ -305,77 +313,114 @@ drop if estrata_moda =="NR"
 destring *, replace
 
 cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output"
+keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtabarrio countzikadtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1
 
-keep  codigo_barrio  nombre countdenguedtabarrio  countchikdtabarrio countzikadtabarrio monthtime anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1
-save poisson, replace
-touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls, replace
+
+	misstable sum
+	foreach var in rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1{
+			egen miss`var' = mean(`var'), by(codigo_barrio)
+			replace `var' = miss`var' if `var' ==. 
+			drop miss`var'
+			
+			egen miss`var' = mean(`var')
+			replace `var' = miss`var' if `var' ==. 
+			drop miss`var'
+			}
+			
+			misstable sum
+
+			save poisson, replace
+preserve
+	
+use poisson, clear
+	bysort  codigo_barrio: gen sumcountdenguedtabarrio = sum(countdenguedtabarrio)
+	egen dengue= max(sumcountdenguedtabarrio), by(codigo_barrio) 
+
+	bysort  codigo_barrio: gen sumcountzikadtabarrio = sum(countzikadtabarrio)
+	egen zika= max(sumcountzikadtabarrio), by(codigo_barrio) 
+
+	bysort  codigo_barrio: gen sumcountchikvdtabarrio = sum(countchikdtabarrio)
+	egen chikv = max(sumcountchikvdtabarrio), by(codigo_barrio) 
+	
+	collapse (mean) POINT_X POINT_Y  chikv zika dengue rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1, by(codigo_barrio)
+
+		*rename POINT_X POINT_X1
+		*rename POINT_Y POINT_Y1 
+		*merge m:1 codigo_barrio using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rxy.dta"
+	
+	order  chikv zika dengue  POINT_Y* POINT_X*
+	
+	drop anm_serv_cov_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_services_index anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain  year month monthtime 
+
+	misstable sum
+
+	outsheet using disease_counts.csv, comma nolabel replace
+	
+restore
+
+
+
+	global fixed "rainlag1 Avg_rain temp_anom_median_c templag1 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210"
+	global fixedanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
+
+foreach var in `fixed' `fixedanom'{
+					histogram `var' 
+					graph export `var'.tif, replace
+				}
+
+table1, vars(countdenguedtabarrio conts\  countchikdtabarrio conts\ countzikadtabarrio conts\  rainlag1 conts\ Avg_rain conts\ temp_anom_median_c conts\ templag1 conts\ serv_cov_index conts\ services_index conts\ assist_educ_P contn\ alguna_limit_p contn\ literate_p conts\ ed_index_sum conts\ assist_esc_ind conts\ home_empty_p conts\ estrato_mon3210 cat\ male_p conts\ negro__a___mulato__afrop conts\ unem_p conts\ home_p conts\ single_p conts\ cobertura_alcant conts\ cobertura_energi conts\ arean3210 conts\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\table1.xls", replace) missing test
+
+*touch "poissontables_indiceseform_nov5.xls", replace	
 
 foreach var in countdenguedtabarrio countchikdtabarrio countzikadtabarrio{
+	local fixed "rainlag1 Avg_rain temp_anom_median_c templag1 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p i.estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210"
+	local fixedanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p i.anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
+	*stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) 
 
-local indepenent "anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain temp_anom_median_c templag1"
-foreach var in `indepenent'{
-histogram `var' 
-graph export `var'.tif, replace
-}
-*anm_single anm_home_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain l1anm_Avg_rain anm_negro__a___mulato__afrop anm_assist_educ_P anm_alguna_limit_p anm_ed_index_sum  anm_serv_cov_indexanm_tasa_assist_index_sum anm_male_p "
-*single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  Avg_rainl1  negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
-*local indepenent "single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  rainlag1  temp_anom_median_c templag1 negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
+			local i = `i' + 1
+			xtgee `var' `fixed' , vce(robust) family(poisson) link(log) corr(ar 1) eform
+			est sto m`var'
+			
+	
+			outreg2 using "poissontables_indiceseform_nov5.xls", append e(r2_p) eform 
+			margins  estrato_mon3210
+			
+		*ereturn post
+		margins
+		estat vce
+		estat wcorrelation
+		estat summarize
+		capture drop `var'p
+		predict `var'p if e(sample) 
+		corr `var' `var'p if e(sample) 
+		di "********************"r(rho)^2 "********************"
 
-*stepwise, pr(.1) pe(.05) : poisson  `var'  `indepenent', vce(robust) 
-/*
-xtgee `var' `indepenent' , vce(robust) family(poisson) link(log) corr(ar 1) eform
+		predict yhat`var', xb
+		gen residual`var' = `var'- yhat`var' 
 
-*ereturn post
-margins
-marginsplot
+		twoway scatter residual`var' `var'  
+		graph export "residual`var'_`var'.tif", replace
 
-estat vce
-estat wcorrelation
-estat summarize
-capture drop `var'p
-predict `var'p if e(sample) 
-corr `var' `var'p if e(sample) 
+		gen l1residual`var' = L.residual`var' 
 
-predict yhat`var', xb
-gen residual`var' = `var'- yhat`var' 
+		twoway scatter l1residual`var' `var'  
+		graph export "l1residual`var'_`var'.tif", replace 
 
-twoway scatter residual`var' `var'  
-graph export "residual`var'_`var'.tif", replace
+		twoway scatter l1residual`var' residual`var'
+		graph export "l1residual`var'_residual`var'.tif", replace
 
-gen l1residual`var' = L.residual`var' 
+		twoway scatter residual`var' yhat`var' 
+		graph export "residual`var'_yhat`var'.tif", replace
+		
 
-twoway scatter l1residual`var' `var'  
-graph export "l1residual`var'_`var'.tif", replace 
-
-twoway scatter l1residual`var' residual`var'
-graph export "l1residual`var'_residual`var'.tif", replace
-
-twoway scatter residual`var' yhat`var' 
-graph export "residual`var'_yhat`var'.tif", replace
-di "********************"r(rho)^2 "********************"
-
-
-outreg2 using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls", append e(r2_p) eform 
-*/
 *mixed models so we can let rain and temp vary with time but keep everything else constant since we just measured them once
-touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls, replace
-
-local fixedanom "anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
-local fixed "serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210"
-local varyanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1"
-xtmepoisson  countdenguedtabarrio `fixedanom', || _all: `varyanom', covariance(independent) irr 
-outreg2 using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poisson_mixed_nov5.xls", append e(r2_p) eform 
+		touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls, replace
+		local fixedanom "anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
+		local fixed "serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210"
+		local varyanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1"
+		*xtmepoisson  `var' `fixedanom', || _all: `varyanom', covariance(independent) irr 
+		*outreg2 using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poisson_mixed_nov5.xls", append e(r2_p) eform 
 }
-
-*plot residuals vs lagged residuals too.
-
-****come back here and remake the table 1 and export the vars we want for gwr*********
-*local indepenent "serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index serv_cov_index assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain"
-
-"single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  rainlag1  temp_anom_median_c templag1 negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
-table1, vars(dist_barrio_canal_m conts\ dist_water_barrio_m conts\ temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afro conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\literate_p contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\home_occupied_perc conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
-
-*table1, by(monthyear) vars(dist_barrio_canal_m conts\ dist_water_barrio_m conts\ temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afro conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\literate_p contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\home_occupied_perc conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
-
+esttab mcountzikadtabarrio mcountdenguedtabarrio  mcountchikdtabarrio  using poisson.rtf, append eform z
 
 graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
