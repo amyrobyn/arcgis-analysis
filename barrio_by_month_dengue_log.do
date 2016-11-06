@@ -413,11 +413,30 @@ save merged_barrios_rain_temp_diseases, replace
 outsheet using "merged_102816", comma replace
 
 use merged_barrios_rain_temp_diseases
+
+
+gen  negro__a___mulato__afrop =  negro__a___mulato__afro/total_pop
+gen unemp= occupation_condition_desocupada_ /occupation_condition_total
+gen home_p= oficios_hogar/total_pop
+gen single = soltero_a_/total_pop
+
 destring monthyear, replace
 gen monthtime = month
 replace monthtime = month + 12 if year ==2015
 replace monthtime = month + 24 if year ==2016
+
+
 xtset codigo_barrio monthtime, monthly
+
+foreach var in single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain temp_anom_median_c negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p{
+summarize `var', meanonly
+gen anm_`var' = `var' - r(mean)
+xtserial  countdenguedtabarrio `var' 
+xtserial  countdenguedtabarrio anm_``var' 
+}
+
+gen rainlag1 = L.rainanom 
+gen templag1= L.temp_anom_median_c
 
 *selected models
 bysort countdenguedtabarrio countchikdtabarrio countzikadtabarrio: sum Avg_rain temp_anom_median_c total_pop arean3210 estrato_mon3210 educ_ratio sabe_leer_y_escribir_ratio services_coverage_index_sum empty_ratio maletofemale 
@@ -431,14 +450,6 @@ drop if estrata_moda =="NR"
 destring *, replace
 
 touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\poissontables_indiceseform_nov5.xls, replace
-
-gen  negro__a___mulato__afrop =  negro__a___mulato__afro/total_pop
-gen rainlag1 = Avg_rain[_n-1]
-gen templag1 =  temp_anom_median_c[_n-1]
-gen unemp= occupation_condition_desocupada_ /occupation_condition_total
-gen home_p= oficios_hogar/total_pop
-gen single = soltero_a_/total_pop
-
 foreach var in  countdenguedtabarrio  countchikdtabarrio countzikadtabarrio{
 
 *local indepenent "Avg_rain ESTRA_MODA temp_anom_median_c maletofemale empty_ratio alguna_limitacin_ratio educ_ratio"
@@ -450,6 +461,8 @@ local indepenent "single home_p cobertura_alcant cobertura_energi arean3210 Avg_
 stepwise, pr(.1) pe(.05) : poisson  `var'  `indepenent', vce(robust) 
 xtgee `var' `indepenent' , vce(robust) family(poisson) link(log) corr(ar 1) eform
 
+estat bgodfrey , lags(12)
+
 estat vce
 estat wcorrelation
 estat summarize
@@ -459,6 +472,12 @@ corr `var'  `var'p if e(sample)
 di "********************"r(rho)^2 "********************"
 outreg2 using poissontables_indiceseform_nov5.xls, append e(r2_p) eform 
 }
+
+****come back here and remake the table 1 and export the vars we want for gwr*********
+local indepenent "single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  rainlag1  temp_anom_median_c templag1 negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
+table1, by(monthyear) vars(dist_barrio_canal_m conts\ dist_water_barrio_m conts\ temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afro conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\sabe_leer_y_escribir_ratio contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\home_occupied_perc conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
+export excel using "neighborhood_GWR_indices`dataset'", firstrow(variables) replace
+
 
 
 graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
