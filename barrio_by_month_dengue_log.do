@@ -239,6 +239,8 @@ foreach var in assist_educ_P  serv_cov_index  alguna_limit_p literate_p ed_index
 						replace `var' = b`var'b if `var'==.
 						drop b`var'b
 						
+						replace `var' = . if `var'==0
+
 			}
 	recast int month, force
 	recast int year, force
@@ -286,10 +288,12 @@ foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_
 summarize `var', meanonly
 gen anm_`var' = `var' - r(mean)
 gen l1anm_`var' = L.anm_`var'
+gen l2anm_`var' = L.l1anm_`var'
 foreach disaease in countdenguedtabarrio countzikadtabarrio countzikadtabarrio{ 
 xtserial  `disaease' `var' 
 xtserial  `disaease' anm_`var' 
 xtserial  `disaease' l1anm_`var'
+xtserial  `disaease'  l2anm_`var' 
 }
 }
 
@@ -300,32 +304,79 @@ drop v2 acuerdoc32  _merge limitesc32 vivienda_c~_   hogares
 drop if estrata_moda =="NR"
 destring *, replace
 
-touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\poissontables_indiceseform_nov5.xls, replace
-foreach var in  countdenguedtabarrio  countchikdtabarrio countzikadtabarrio{
+cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output"
 
-local indepenent " anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain temp_anom_median_c templag1"
+keep  codigo_barrio  nombre countdenguedtabarrio  countchikdtabarrio countzikadtabarrio monthtime anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1
+save poisson, replace
+touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls, replace
+
+foreach var in countdenguedtabarrio  countchikdtabarrio countzikadtabarrio{
+
+local indepenent "anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain temp_anom_median_c templag1"
+foreach var in `indepenent'{
+histogram `var' 
+graph export `var'.tif, replace
+}
 *anm_single anm_home_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain l1anm_Avg_rain anm_negro__a___mulato__afrop anm_assist_educ_P anm_alguna_limit_p anm_ed_index_sum  anm_serv_cov_indexanm_tasa_assist_index_sum anm_male_p "
 *single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  Avg_rainl1  negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
 *local indepenent "single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  rainlag1  temp_anom_median_c templag1 negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
-stepwise, pr(.1) pe(.05) : poisson  `var'  `indepenent', vce(robust) 
+
+*stepwise, pr(.1) pe(.05) : poisson  `var'  `indepenent', vce(robust) 
+/*
 xtgee `var' `indepenent' , vce(robust) family(poisson) link(log) corr(ar 1) eform
+
+*ereturn post
+margins
+marginsplot
 
 estat vce
 estat wcorrelation
 estat summarize
 capture drop `var'p
 predict `var'p if e(sample) 
-corr `var'  `var'p if e(sample) 
+corr `var' `var'p if e(sample) 
+
+predict yhat`var', xb
+gen residual`var' = `var'- yhat`var' 
+
+twoway scatter residual`var' `var'  
+graph export "residual`var'_`var'.tif", replace
+
+gen l1residual`var' = L.residual`var' 
+
+twoway scatter l1residual`var' `var'  
+graph export "l1residual`var'_`var'.tif", replace 
+
+twoway scatter l1residual`var' residual`var'
+graph export "l1residual`var'_residual`var'.tif", replace
+
+twoway scatter residual`var' yhat`var' 
+graph export "residual`var'_yhat`var'.tif", replace
 di "********************"r(rho)^2 "********************"
-outreg2 using poissontables_indiceseform_nov5.xls, append e(r2_p) eform 
+
+
+outreg2 using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls", append e(r2_p) eform 
+*/
+*mixed models so we can let rain and temp vary with time but keep everything else constant since we just measured them once
+touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls, replace
+
+local fixedanom "anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
+local fixed "serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210"
+local varyanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1"
+xtmepoisson  countdenguedtabarrio `fixedanom', || _all: `varyanom', covariance(independent) irr 
+outreg2 using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poisson_mixed_nov5.xls", append e(r2_p) eform 
+
 }
+
+*plot residuals vs lagged residuals too.
 
 ****come back here and remake the table 1 and export the vars we want for gwr*********
 *local indepenent "serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index serv_cov_index assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain"
 
 "single home_p cobertura_alcant cobertura_energi arean3210 Avg_rain  rainlag1  temp_anom_median_c templag1 negro__a___mulato__afrop  assist_educ_P alguna_limit_p ed_index_sum services_coverage_index_sum tasa_assist_index_sum male_p"
-export excel using "neighborhood_GWR_indices`dataset'", firstrow(variables) replace
-table1, by(monthyear) vars(dist_barrio_canal_m conts\ dist_water_barrio_m conts\ temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afro conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\literate_p contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\home_occupied_perc conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
+table1, vars(dist_barrio_canal_m conts\ dist_water_barrio_m conts\ temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afro conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\literate_p contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\home_occupied_perc conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
+
+*table1, by(monthyear) vars(dist_barrio_canal_m conts\ dist_water_barrio_m conts\ temp_anom_median_c conts\  Avg_rain conts\ total_pop contn\ arean3210 contn\ estrato_mon3210 cat\indigena conts\rom conts\raizal conts\negro__a___mulato__afro conts\ninguno_de_los_anteriores conts\asistencia_educativa_ratio contn\alguna_limitacin_ratio contn\literate_p contn\services_index_sum conts\services_coverage_index_sum conts\tasa_assistenciaesc_index_sum conts\home_occupied_perc conts\maletofemale contn\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\neighborhood_mes'`dataset''.xls", replace) missing test
 
 
 graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  

@@ -256,6 +256,8 @@ capture destring `var', replace
 egen `var'_avg = mean(`var')
 replace `var' = `var'_avg if `var'==.
 drop `var'_avg
+replace `var' = . if `var'==0
+
 }
 
 foreach disease in countzikabarrio	countchikvbarrio	countdenguebarrio{
