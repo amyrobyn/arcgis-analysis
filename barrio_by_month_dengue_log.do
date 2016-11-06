@@ -233,7 +233,7 @@ gen single_p = soltero_a_/total_pop
 
 
 
-foreach var in assist_educ_P  serv_cov_index  alguna_limit_p literate_p ed_index_sum services_index assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain{
+foreach var in unem_p home_p single_p  negro__a___mulato__afrop  assist_educ_P  serv_cov_index  alguna_limit_p literate_p ed_index_sum services_index assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain{
 						capture destring `var', replace
 						egen b`var'b = mean(`var')
 						replace `var' = b`var'b if `var'==.
@@ -310,7 +310,7 @@ keep  codigo_barrio  nombre countdenguedtabarrio  countchikdtabarrio countzikadt
 save poisson, replace
 touch C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poissontables_indiceseform_nov5.xls, replace
 
-foreach var in countdenguedtabarrio  countchikdtabarrio countzikadtabarrio{
+foreach var in countdenguedtabarrio countchikdtabarrio countzikadtabarrio{
 
 local indepenent "anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain temp_anom_median_c templag1"
 foreach var in `indepenent'{
@@ -365,7 +365,6 @@ local fixed "serv_cov_index services_index assist_educ_P alguna_limit_p literate
 local varyanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1"
 xtmepoisson  countdenguedtabarrio `fixedanom', || _all: `varyanom', covariance(independent) irr 
 outreg2 using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poisson_mixed_nov5.xls", append e(r2_p) eform 
-
 }
 
 *plot residuals vs lagged residuals too.
