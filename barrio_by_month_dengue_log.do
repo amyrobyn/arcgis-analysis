@@ -350,7 +350,8 @@ use poisson, clear
 	
 	order  chikv zika dengue  POINT_Y* POINT_X*
 	
-	drop anm_serv_cov_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_services_index anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain  year month monthtime 
+	drop anm_serv_cov_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_services_index anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain  
+	*year month monthtime 
 
 	misstable sum
 
@@ -371,19 +372,48 @@ foreach var in `fixed' `fixedanom'{
 table1, vars(countdenguedtabarrio conts\  countchikdtabarrio conts\ countzikadtabarrio conts\  rainlag1 conts\ Avg_rain conts\ temp_anom_median_c conts\ templag1 conts\ serv_cov_index conts\ services_index conts\ assist_educ_P contn\ alguna_limit_p contn\ literate_p conts\ ed_index_sum conts\ assist_esc_ind conts\ home_empty_p conts\ estrato_mon3210 cat\ male_p conts\ negro__a___mulato__afrop conts\ unem_p conts\ home_p conts\ single_p conts\ cobertura_alcant conts\ cobertura_energi conts\ arean3210 conts\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\table1.xls", replace) missing test
 
 *touch "poissontables_indiceseform_nov5.xls", replace	
+rename countdenguedtabarrio dengue
+rename countchikdtabarrio chikv
+rename countzikadtabarrio zika
 
-foreach var in countdenguedtabarrio countchikdtabarrio countzikadtabarrio{
-	local fixed "rainlag1 Avg_rain temp_anom_median_c templag1 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p i.estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210"
-	local fixedanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p i.anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
-	*stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) 
 
-			local i = `i' + 1
-			xtgee `var' `fixed' , vce(robust) family(poisson) link(log) corr(ar 1) eform
-			est sto m`var'
-			
+
+
+
+
+
+
+
+
+
+
+foreach var in dengue zika chikv {
+xtset, clear
+
+*temp_anom_median_c templag1 
+	local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum anm_assist_esc_ind alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
+
+	stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) 
+	est sto mstepwise`var'
+	estat gof
 	
-			outreg2 using "poissontables_indiceseform_nov5.xls", append e(r2_p) eform 
-			margins  estrato_mon3210
+xtset codigo_barrio monthtime , monthly
+
+*temp_anom_median_c templag1 
+qic `var' `fixed' , robust  family(poisson) link(log) eform    corr(ind)  
+	est sto mqic`var'
+	
+xtset codigo_barrio monthtime , monthly
+	stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) 
+	est sto mxtstepwise`var'
+
+	 *home_empty_p  unem_p i.estrato_mon3210 
+
+	*local fixed "rainlag1 Avg_rain serv_cov_index anm_ed_index_sum anm_assist_esc_ind alguna_limit_p literate_p home_empty_p i.estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
+	*local fixedanom "anm_Avg_rain l1anm_Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_home_empty_p i.anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
+
+			xtgee `var' `fixed' , vce(robust) family(poisson) link(log) corr(ind) eform
+			est sto mxtgee`var'
 			
 		*ereturn post
 		margins
@@ -421,6 +451,9 @@ foreach var in countdenguedtabarrio countchikdtabarrio countzikadtabarrio{
 		*xtmepoisson  `var' `fixedanom', || _all: `varyanom', covariance(independent) irr 
 		*outreg2 using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\poisson_mixed_nov5.xls", append e(r2_p) eform 
 }
-esttab mcountzikadtabarrio mcountdenguedtabarrio  mcountchikdtabarrio  using poisson.rtf, append eform z
+
+foreach var in dengue zika chikv{
+esttab mxtgee`var' mxtstepwise`var' mstepwise`var' mqic`var' using poisson.rtf, append eform z
+}
 
 graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
