@@ -237,7 +237,7 @@ gen home_p= oficios_hogar/total_pop
 gen single_p = soltero_a_/total_pop
 
 
-foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain {
+foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210  male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain {
 						capture destring `var', replace
 						egen `var'b = mean(`var')
 						replace `var' = `var'b if `var'==.
@@ -254,11 +254,13 @@ foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_
 *order count* POINT_X POINT_Y Avg_rain temp_anom_median_c estrato_mon3210 services_coverage_index_sum empty_ratio total_pop educ_ratio arean3210 sabe_leer_y_escribir_ratio maletofemale
 outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\gwr4\disease_counts_mes`dataset'.csv", comma nolabel replace
 preserve
+
 collapse (sum) count*, by(codigo_barrio)
 save count`dataset', replace
 restore
+
 preserve
-collapse (mean) POINT_X POINT_Y serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain , by(codigo_barrio)
+collapse (mean) POINT_X POINT_Y serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index assist_esc_ind home_empty_p  male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 Avg_rain estrato_mon3210 temp_anom_median_c, by(codigo_barrio)
 
 merge 1:1 codigo_barrio using count`dataset'
 drop _merge POINT_X POINT_Y 
@@ -288,15 +290,34 @@ gen monthtime = ym(year, month)
 format %tm  monthtime 
 tab monthtime 
 
-xtset codigo_barrio monthtime , monthly
+foreach var in  countdenguedtabarrio countzikadtabarrio countchikdtabarrio{
+tab `var' if monthtime ==.
+}
 
-foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain {
+xtset codigo_barrio monthtime , monthly
+drop if monthtime ==.
+tsfill, full
+
+
+
+
+foreach var in nombre_barrio serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 Avg_rain {
+bysort codigo_barrio: carryforward `var', gen(`var'mis)
+replace `var' = `var'mis
+drop `var'mis
+}
+foreach var in countdenguedtabarrio countzikadtabarrio countchikdtabarrio{
+replace `var' = 0 if `var'==.
+}
+
+foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 Avg_rain {
 summarize `var', meanonly
 gen anm_`var' = `var' - r(mean)
 gen l1anm_`var' = L.anm_`var'
 gen l2anm_`var' = L.l1anm_`var'
 
 foreach disaease in countdenguedtabarrio countzikadtabarrio countzikadtabarrio{ 
+
 xtserial  `disaease' `var' 
 xtserial  `disaease' anm_`var' 
 xtserial  `disaease' l1anm_`var'
@@ -309,15 +330,18 @@ gen templag1= L.temp_anom_median_c
 
 rename hogares2 hogar
 drop v2 acuerdoc32  _merge limitesc32 vivienda_c~_   hogares
-drop if estrata_moda =="NR"
+replace estrata_moda = "." if estrata_moda =="NR"
 destring *, replace
 
+
 cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output"
-keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtabarrio countzikadtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1
+capture log close 
+log using "arcgis_analysis_only_oct_26_2016_mes.smcl", text replace 
+keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtabarrio countzikadtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1
 
 
 	misstable sum
-	foreach var in rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1{
+	foreach var in rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1{
 			egen miss`var' = mean(`var'), by(codigo_barrio)
 			replace `var' = miss`var' if `var' ==. 
 			drop miss`var'
@@ -330,9 +354,18 @@ keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtaba
 			misstable sum
 
 			save poisson, replace
+
+		local fixed_outcome "countdenguedtabarrio countzikadtabarrio countchikdtabarrio literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210 estrato_mon3210 temp_anom_median_c templag1"
+		foreach var in `fixed_outcome'{
+					histogram `var' 
+					graph export `var'.tif, replace
+				}
+
+			
 preserve
 	
 use poisson, clear
+xtset, clear
 	bysort  codigo_barrio: gen sumcountdenguedtabarrio = sum(countdenguedtabarrio)
 	egen dengue= max(sumcountdenguedtabarrio), by(codigo_barrio) 
 
@@ -342,88 +375,105 @@ use poisson, clear
 	bysort  codigo_barrio: gen sumcountchikvdtabarrio = sum(countchikdtabarrio)
 	egen chikv = max(sumcountchikvdtabarrio), by(codigo_barrio) 
 	
-	collapse (mean) POINT_X POINT_Y  chikv zika dengue rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain  temp_anom_median_c templag1, by(codigo_barrio)
-
-		*rename POINT_X POINT_X1
-		*rename POINT_Y POINT_Y1 
-		*merge m:1 codigo_barrio using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\data\avg_rain\rxy.dta"
+	collapse (mean) POINT_X POINT_Y  chikv zika dengue literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210 temp_anom_median_c templag1 estrato_mon3210 , by(codigo_barrio)
 	
 	order  chikv zika dengue  POINT_Y* POINT_X*
 	
-	drop anm_serv_cov_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_services_index anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain  
-	*year month monthtime 
+	*drop anm_serv_cov_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_services_index anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain  
 
 	misstable sum
 
 	outsheet using disease_counts.csv, comma nolabel replace
+
 	
+*check for overdispersion	
+sum dengue, d
+sum chikv, d
+sum zika, d
+*all three are overdispersed. Use a negative binomial model or hurdle model (0 inflated)
+/*
+The likelihood ratio test at the bottom of the analysis negative binomial is a test of the overdispersion parameter alpha. When the overdispersion parameter is zero the negative binomial distrbution is equivalent to a poisson distribution. In this case, alpha is significantly different from zero and thus reinforces one last time that the poisson distribution is not appropriate.
+*/
+
+
+	foreach var in  dengue zika chikv{
+	local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 temp_anom_median_c templag1"
+	*poisson `var' `fixed', irr vce(robust)
+	*est sto mpglobal`var' 
+
+	nbreg `var' `fixed', irr vce(robust)
+	est sto mnbglobal`var' 
+	
+	fitstat
+	
+	predict `var'hat, xb
+	gen `var'residual = `var'-`var'hat
+	twoway scatter `var'residual  `var'hat
+	graph export mglobal`var'residual_`var'hat.tif, replace width(4000)
+}	
+	save poisson_collapsed, replace
 restore
 
-
-
-	global fixed "rainlag1 Avg_rain temp_anom_median_c templag1 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210"
-	global fixedanom "anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_assist_esc_ind anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210"
-
-foreach var in `fixed' `fixedanom'{
-					histogram `var' 
-					graph export `var'.tif, replace
-				}
-
-table1, vars(countdenguedtabarrio conts\  countchikdtabarrio conts\ countzikadtabarrio conts\  rainlag1 conts\ Avg_rain conts\ temp_anom_median_c conts\ templag1 conts\ serv_cov_index conts\ services_index conts\ assist_educ_P contn\ alguna_limit_p contn\ literate_p conts\ ed_index_sum conts\ assist_esc_ind conts\ home_empty_p conts\ estrato_mon3210 cat\ male_p conts\ negro__a___mulato__afrop conts\ unem_p conts\ home_p conts\ single_p conts\ cobertura_alcant conts\ cobertura_energi conts\ arean3210 conts\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\table1.xls", replace) missing test
-
-*touch "poissontables_indiceseform_nov5.xls", replace	
 rename countdenguedtabarrio dengue
 rename countchikdtabarrio chikv
 rename countzikadtabarrio zika
 
+save poisson, replace
 
+gen logdengue = log(dengue) 
+gen logika = log(zika) 
+gen logchikv = log(chikv) 
 
+graph matrix logdengue  logzika logchikv dengue chikv zika literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
 
-
-
-
-
-
-
-
+graph export scatterplot_matrix.tif, replace width(4000)
 
 foreach var in dengue zika chikv {
-*temp_anom_median_c templag1 
-	local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum anm_assist_esc_ind alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
-	*stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) 
-	*est sto mstepwise`var'
+xtset codigo_barrio monthtime, monthly
+	local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210"
 
-	xtgee `var' `fixed' , vce(robust) family(poisson) link(log) corr(ind) eform
-	est sto mxtgee`var'
+	*stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) irr
+	est sto mstepwise`var'
+
+	xtgee `var' `fixed', family(nbinomial) link(nbinomial) corr(ar 3) vce(robust) eform
+	est sto mnbxtgee`var'
 		margins
 		estat vce
 		estat wcorrelation
 		estat summarize
 		capture drop `var'p
-		predict `var'p if e(sample) 
-		corr `var' `var'p if e(sample) 
+		predict p`var' if e(sample) 
+		corr `var' p`var' if e(sample) 
 		di "********************"r(rho)^2 "********************"
 
 		predict yhat`var', xb
 		gen residual`var' = `var'- yhat`var' 
-
-		twoway scatter residual`var' `var'  
-		graph export "residual`var'_`var'.tif", replace
-
 		gen l1residual`var' = L.residual`var' 
+		gen l2residual`var' = L.l1residual`var'
+		gen l3residual`var' = L.l2residual`var' 
 
-		twoway scatter l1residual`var' `var'  
-		graph export "l1residual`var'_`var'.tif", replace 
-
-		twoway scatter l1residual`var' residual`var'
-		graph export "l1residual`var'_residual`var'.tif", replace
 
 		twoway scatter residual`var' yhat`var' 
-		graph export "residual`var'_yhat`var'.tif", replace
-		}
+		graph export "longitudinal_residual`var'_yhat`var'.tif", replace width(4000)
 
-foreach var in dengue zika chikv{
-esttab mxtgee`var' using poisson.rtf, append eform z
+		twoway scatter l1residual`var' yhat`var'  
+		graph export "longitudinal_lag1_residual`var'_yhat`var'.tif", replace width(4000)
+
+		twoway scatter l2residual`var' yhat`var'  
+		graph export "longitudinal_lag2_residual`var'_yhat`var'.tif", replace width(4000)
+
+		twoway scatter l3residual`var' yhat`var'  
+		graph export "longitudinal_lag3_residual`var'_yhat`var'.tif", replace width(4000)
+
 }
 
+foreach var in dengue zika chikv{
+esttab mnbglobal`var'  mnbxtgee`var' using negbinomial.rtf, append eform z
+*mstepwise`var' 
+}
+
+
 graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
+
+table1, vars(dengue conts\  chikv conts\ zika conts\  rainlag1 conts\ Avg_rain conts\ temp_anom_median_c conts\ templag1 conts\ serv_cov_index conts\ services_index conts\ assist_educ_P contn\ alguna_limit_p contn\ literate_p conts\ ed_index_sum conts\ assist_esc_ind conts\ home_empty_p conts\ estrato_mon3210 cat\ male_p conts\ negro__a___mulato__afrop conts\ unem_p conts\ home_p conts\ single_p conts\ cobertura_alcant conts\ cobertura_energi conts\ arean3210 conts\ estrato_mon3210 cate \temp_anom_median_c conts \ templag1 conts\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\table1.xls", replace) missing test
+
