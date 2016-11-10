@@ -421,22 +421,28 @@ rename countzikadtabarrio zika
 save poisson, replace
 
 gen logdengue = log(dengue) 
-gen logika = log(zika) 
+gen logzika = log(zika) 
 gen logchikv = log(chikv) 
 
-graph matrix logdengue  logzika logchikv dengue chikv zika literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
+gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
 
+graph matrix logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
 graph export scatterplot_matrix.tif, replace width(4000)
 
 foreach var in dengue zika chikv {
 xtset codigo_barrio monthtime, monthly
-	local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210"
+	local fixed "rainlag1 serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
 
 	*stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) irr
 	est sto mstepwise`var'
 
+	*xtmixed dengue  Avg_rain|| codigo_barrio:, var noconst residuals(ar(3), t(monthtime)) reml
+	*xtmixed `var' `fixed'|| codigo_barrio:, family(nbinomial) link(nbinomial) corr(ar 3) vce(robust) eform
+
+		
 	xtgee `var' `fixed', family(nbinomial) link(nbinomial) corr(ar 3) vce(robust) eform
 	est sto mnbxtgee`var'
+
 		margins
 		estat vce
 		estat wcorrelation
@@ -447,11 +453,15 @@ xtset codigo_barrio monthtime, monthly
 		di "********************"r(rho)^2 "********************"
 
 		predict yhat`var', xb
-		gen residual`var' = `var'- yhat`var' 
+	
+		predict yres, residual
+		
+		predict residual`var', working
 		gen l1residual`var' = L.residual`var' 
 		gen l2residual`var' = L.l1residual`var'
 		gen l3residual`var' = L.l2residual`var' 
 
+		graph twoway scatter yres yhat , yline(0) xlabel(3800(200)5000) ylabel(-300(100)400)
 
 		twoway scatter residual`var' yhat`var' 
 		graph export "longitudinal_residual`var'_yhat`var'.tif", replace width(4000)
