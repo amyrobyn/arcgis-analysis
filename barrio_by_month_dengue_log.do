@@ -357,8 +357,8 @@ keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtaba
 
 		local fixed_outcome "countdenguedtabarrio countzikadtabarrio countchikdtabarrio literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210 estrato_mon3210 temp_anom_median_c templag1"
 		foreach var in `fixed_outcome'{
-					histogram `var' 
-					graph export `var'.tif, replace
+					*histogram `var' 
+					*graph export `var'.tif, replace
 				}
 
 			
@@ -396,13 +396,29 @@ The likelihood ratio test at the bottom of the analysis negative binomial is a t
 */
 
 
-	foreach var in  dengue zika chikv{
-	local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 temp_anom_median_c templag1"
+
+use poisson, clear
+
+rename countdenguedtabarrio dengue
+rename countzikadtabarrio zika
+rename countchikdtabarrio chikv
+
+	foreach var in  zika chikv dengue {
+
+	*local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 temp_anom_median_c templag1"
+	local fixed  "anm_ed_index_sum negro__a___mulato__afrop arean3210 Avg_rain anm_cobertura_energi serv_cov_index estrato_mon3210 home_p single_p male_p alguna_limit_p anm_cobertura_alcant literate_p rainlag1"  
+
 	*poisson `var' `fixed', irr vce(robust)
 	*est sto mpglobal`var' 
+poisson `var' `fixed', irr vce(robust)
+
+	swaic 
+	local fixed  "anm_ed_index_sum rainlag1 Avg_rain negro__a___mulato__afrop arean3210 serv_cov_index anm_cobertura_energi male_p single_p anm_cobertura_alcant"
 
 	nbreg `var' `fixed', irr vce(robust)
 	est sto mnbglobal`var' 
+
+	
 	
 	fitstat
 	
@@ -426,22 +442,38 @@ gen logchikv = log(chikv)
 
 gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
 
-graph matrix logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
-graph export scatterplot_matrix.tif, replace width(4000)
+*graph matrix logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
+*graph export scatterplot_matrix.tif, replace width(4000)
 
-foreach var in dengue zika chikv {
+foreach var in dengue chikv zika{
 xtset codigo_barrio monthtime, monthly
-	local fixed "rainlag1 serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
+	*local fixed "rainlag1 serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
+	local fixed  "anm_ed_index_sum rainlag1 Avg_rain negro__a___mulato__afrop arean3210 serv_cov_index anm_cobertura_energi male_p single_p anm_cobertura_alcant"
 
-	*stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) irr
+	stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) irr
 	est sto mstepwise`var'
+	
+	gen con =1
+	eq int: con
+    eq slope: monthtime
 
-	*xtmixed dengue  Avg_rain|| codigo_barrio:, var noconst residuals(ar(3), t(monthtime)) reml
+	gllamm `var' `fixed', i(codigo_barrio) nrf(2) eqs(slope int) adapt trace
+	est sto gllamm`var'
+	
+	capture drop con
+	
+	xtnbreg `var' `fixed', irr i(codigo_barrio) 
+	est sto mxtnbregrandom`var'
+	
+	*xtnbreg `var' `fixed', pa corr(ar 3)
+	est sto mxtnbregar3`var'
+	
+	*xtmixed `var'  `fixed'|| codigo_barrio:, var noconst  residuals(ar 3, t(monthtime)) reml
 	*xtmixed `var' `fixed'|| codigo_barrio:, family(nbinomial) link(nbinomial) corr(ar 3) vce(robust) eform
-
+	*est sto mxtmixed`var'
 		
 	xtgee `var' `fixed', family(nbinomial) link(nbinomial) corr(ar 3) vce(robust) eform
-	est sto mnbxtgee`var'
+	est sto mxt`var'
 
 		margins
 		estat vce
@@ -454,14 +486,14 @@ xtset codigo_barrio monthtime, monthly
 
 		predict yhat`var', xb
 	
-		predict yres, residual
+		predict yres`var', r
 		
-		predict residual`var', working
+		predict residual`var', r
 		gen l1residual`var' = L.residual`var' 
 		gen l2residual`var' = L.l1residual`var'
 		gen l3residual`var' = L.l2residual`var' 
 
-		graph twoway scatter yres yhat , yline(0) xlabel(3800(200)5000) ylabel(-300(100)400)
+		graph twoway scatter yres`var' yhat`var' , yline(0) xlabel(3800(200)5000) ylabel(-300(100)400)
 
 		twoway scatter residual`var' yhat`var' 
 		graph export "longitudinal_residual`var'_yhat`var'.tif", replace width(4000)
@@ -475,15 +507,18 @@ xtset codigo_barrio monthtime, monthly
 		twoway scatter l3residual`var' yhat`var'  
 		graph export "longitudinal_lag3_residual`var'_yhat`var'.tif", replace width(4000)
 
+
+		foreach var in dengue zika chikv{
+esttab mxt`var' mnbglobal`var' mstepwise`var' gllamm`var' mxtnbregar3`var' mxtnbregrandom`var' using models`var'.rtf, append eform z
+
+}
 }
 
-foreach var in dengue zika chikv{
-esttab mnbglobal`var'  mnbxtgee`var' using negbinomial.rtf, append eform z
-*mstepwise`var' 
-}
 
-
-graph bar (mean) Avg_rain temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Mean Precipitation") label(2 "Median Temperature anomaly") ) ytitle("Degrees Celsius / mm precipation") title("Median temperatures anomaly and Average precipation") note("Source: Rain data Hydro-Estimator, NOAA and Temp anomalies The HadCRUT4 dataset")  
+/*
+graph bar (mean) Avg_rain , over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Average Precipitation")  ) ytitle("mm precipation") title("Average precipation") note("Source: Rain data Hydro-Estimator, NOAA")  
+graph export rain.tif, width(4000)  replace 
+graph bar (mean) temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Median Temperature anomaly")) ytitle("Degrees Celsius") title("Median temperatures anomaly") note("Source: Temp anomalies The HadCRUT4 dataset")  
+graph export temp.tif, width(4000) replace 
 
 table1, vars(dengue conts\  chikv conts\ zika conts\  rainlag1 conts\ Avg_rain conts\ temp_anom_median_c conts\ templag1 conts\ serv_cov_index conts\ services_index conts\ assist_educ_P contn\ alguna_limit_p contn\ literate_p conts\ ed_index_sum conts\ assist_esc_ind conts\ home_empty_p conts\ estrato_mon3210 cat\ male_p conts\ negro__a___mulato__afrop conts\ unem_p conts\ home_p conts\ single_p conts\ cobertura_alcant conts\ cobertura_energi conts\ arean3210 conts\ estrato_mon3210 cate \temp_anom_median_c conts \ templag1 conts\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\table1.xls", replace) missing test
-
