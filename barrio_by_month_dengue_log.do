@@ -448,8 +448,8 @@ gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
 foreach var in dengue chikv zika{
 xtset codigo_barrio monthtime, monthly
 	*local fixed "rainlag1 serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
-	local fixed  "anm_ed_index_sum rainlag1 Avg_rain negro__a___mulato__afrop arean3210 serv_cov_index anm_cobertura_energi male_p single_p anm_cobertura_alcant"
-
+	local fixed  "anm_ed_index_sum rainlag1 Avg_rain negro__a___mulato__afrop arean3210 serv_cov_index male_p "
+*single_p anm_cobertura_alcant anm_cobertura_energi 
 	stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) irr
 	est sto mstepwise`var'
 	
@@ -509,7 +509,7 @@ xtset codigo_barrio monthtime, monthly
 
 
 		foreach var in dengue zika chikv{
-esttab mxt`var' mnbglobal`var' mstepwise`var' gllamm`var' mxtnbregar3`var' mxtnbregrandom`var' using models`var'.rtf, append eform z
+esttab mxt`var' mnbglobal`var' mstepwise`var' gllamm`var' mxtnbregar3`var' mxtnbregrandom`var' using models`var'2.rtf, append eform z
 
 }
 }
