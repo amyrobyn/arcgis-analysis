@@ -315,6 +315,10 @@ merge m:1 codigo_barrio  using "C:\Users\Amykr\Google Drive\Kent\james\dissertat
 keep if _merge==3
 
 
+sort codigo_barrio monthtime 
+xtset codigo_barrio monthtime , monthly
+tsset
+
 foreach var in nombre_barrio serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 Avg_rain date{
 bysort codigo_barrio: carryforward `var', gen(`var'mis)
 replace `var' = `var'mis
@@ -332,12 +336,13 @@ gen l2anm_`var' = L.l1anm_`var'
 
 foreach disaease in countdenguedtabarrio countzikadtabarrio countzikadtabarrio{ 
 
-xtserial  `disaease' `var' 
-xtserial  `disaease' anm_`var' 
-xtserial  `disaease' l1anm_`var'
-xtserial  `disaease'  l2anm_`var' 
+*xtserial  `disaease' `var' 
+*xtserial  `disaease' anm_`var' 
+*xtserial  `disaease' l1anm_`var'
+*xtserial  `disaease'  l2anm_`var' 
 }
 }
+
 
 gen rainlag1= L.Avg_rain
 gen templag1= L.temp_anom_median_c
