@@ -107,11 +107,9 @@ use "merged_barrio_cases.dta", clear
 use "merged_barrio_cases.dta", clear
 		keep if cod_eve == 210|  cod_eve==220|cod_eve==580| cod_eve ==.
 		save dengue.dta, replace	
-use "merged_barrio_cases.dta", clear
-		keep if cod_eve == . 
-		save nodisease.dta, replace	
 
-foreach dataset in "zika" "chik" "dengue"{ 
+
+foreach dataset in "zika" "chik" "dengue" { 
 		use `dataset', clear
 			
 		destring cod_barrio, replace
@@ -128,7 +126,7 @@ foreach dataset in "zika" "chik" "dengue"{
 	}
 
 	
-foreach dataset in "zika.dta" "chik.dta" "dengue.dta"{ 
+foreach dataset in "zika.dta" "chik.dta" "dengue.dta" { 
 		use merged_barrio.dta, clear
 		capture drop _merge
 		merge 1:m codigo_barrio using `dataset'
@@ -276,6 +274,9 @@ drop barrio
 duplicates drop barrio_month, force
 save merge102816`dataset', replace
 }
+
+capture drop _merge
+merge 1:1 barrio_month using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816dengue" 
 capture drop _merge
 merge 1:1 barrio_month using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\merge102816zika" 
 capture drop _merge
@@ -287,6 +288,9 @@ use merged_barrios_rain_temp_diseases
 
 
 destring monthyear, replace
+replace month = 9 if month==. 
+replace year = 2014 if year == .
+
 gen monthtime = ym(year, month)  
 format %tm  monthtime 
 tab monthtime 
@@ -297,15 +301,18 @@ tab `var' if monthtime ==.
 }
 
 xtset codigo_barrio monthtime , monthly
-drop if month==.
-tsfill, full
 
+tsfill, full
+drop if monthtime ==  656 
 
 gen day = 01
-
-
 gen date = dofm(monthtime)
 format date %d
+
+drop _merge
+
+merge m:1 codigo_barrio  using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\barrios.csv.dta" 
+keep if _merge==3
 
 
 foreach var in nombre_barrio serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 Avg_rain date{
