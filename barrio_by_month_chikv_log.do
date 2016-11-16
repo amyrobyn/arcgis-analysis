@@ -156,9 +156,7 @@ egen services_index= rowtotal(vivienda_con_acueducto vivienda_con_alcantarillado
 
 
 egen serv_cov_index= rowtotal(cobertura_vivienda_con____acuedu cobertura_vivienda_con____alcant cobertura_vivienda_con____energi cobertura_vivienda_con____gas cobertura_vivienda_con____telefo)
-replace serv_cov_index = serv_cov_index/100
-egen meanserv_cov_index =mean(serv_cov_index)
-replace serv_cov_index =meanserv_cov_index if serv_cov_index <1 
+
 
 ds, has(type string) 
 foreach var of varlist `r(varlist)' { 
@@ -237,20 +235,6 @@ gen unem_p = desocupada/total_pop
 gen home_p= oficios_hogar/total_pop
 gen single_p = soltero_a_/total_pop
 
-*remove outliers
-egen single_pb = mean(single_p)
-replace single_p  = single_pb if single_p >.9
-drop single_pb
-
-egen single_pb = mean(single_p)
-replace single_p  = single_pb if single_p >.9
-drop single_pb
-
-egen male_pb = mean(male_p)
-replace male_p  = male_pb if male_p >.8
-drop male_pb
-
-
 
 foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210  male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain {
 						capture destring `var', replace
@@ -261,7 +245,6 @@ foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_
 						replace `var' = . if `var'==0
 
 			}
-
 			
 	recast int month, force
 	recast int year, force
@@ -371,7 +354,7 @@ replace estrata_moda = "." if estrata_moda =="NR"
 destring *, replace
 
 
-cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\dengue"
+cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\chikv"
 capture log close 
 log using "arcgis_analysis_only_oct_26_2016_mes.smcl", text replace 
 keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtabarrio countzikadtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 total_pop date
@@ -441,7 +424,7 @@ rename countdenguedtabarrio dengue
 rename countzikadtabarrio zika
 rename countchikdtabarrio chikv
 
-	foreach var in dengue {
+	foreach var in  chikv {
 	
 
 	*local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 temp_anom_median_c templag1"
@@ -489,18 +472,8 @@ gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
 graph matrix logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
 graph export scatterplot_matrix.tif, width(6000) replace 
 
-egen meanarean3210 = mean(arean3210)
-replace arean3210 = meanarean3210  if arean3210 >50000
-drop meanarean3210 
 
-foreach var in logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index alguna_limit_p male_p negro__a___mulato__afrop home_p single_p arean3210  estrato_mon3210 templag1 temp_anom_median_c{
-graph box `var'
-graph export boxplot`var'.tif, width(6000) replace 
-}
-
-
-
-foreach var in dengue{
+foreach var in chikv {
 xtset codigo_barrio monthtime, monthly
 	*local fixed "rainlag1 serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
 	local fixed  "anm_ed_index_sum rainlag1 Avg_rain negro__a___mulato__afrop arean3210 serv_cov_index male_p "
@@ -563,7 +536,7 @@ xtset codigo_barrio monthtime, monthly
 		graph export "longitudinal_lag3_residual`var'_yhat`var'.tif", replace width(4000)
 
 
-		foreach var in dengue {
+		foreach var in chikv{
 esttab mxt`var' mnbglobal`var' mstepwise`var' gllamm`var' mxtnbregar3`var' mxtnbregrandom`var' using models`var'2.rtf, append eform z
 
 }
