@@ -156,7 +156,9 @@ egen services_index= rowtotal(vivienda_con_acueducto vivienda_con_alcantarillado
 
 
 egen serv_cov_index= rowtotal(cobertura_vivienda_con____acuedu cobertura_vivienda_con____alcant cobertura_vivienda_con____energi cobertura_vivienda_con____gas cobertura_vivienda_con____telefo)
-
+replace serv_cov_index = serv_cov_index/100
+egen meanserv_cov_index =mean(serv_cov_index)
+replace serv_cov_index =meanserv_cov_index if serv_cov_index <1 
 
 ds, has(type string) 
 foreach var of varlist `r(varlist)' { 
@@ -235,6 +237,20 @@ gen unem_p = desocupada/total_pop
 gen home_p= oficios_hogar/total_pop
 gen single_p = soltero_a_/total_pop
 
+*remove outliers
+egen single_pb = mean(single_p)
+replace single_p  = single_pb if single_p >.9
+drop single_pb
+
+egen single_pb = mean(single_p)
+replace single_p  = single_pb if single_p >.9
+drop single_pb
+
+egen male_pb = mean(male_p)
+replace male_p  = male_pb if male_p >.8
+drop male_pb
+
+
 
 foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_sum services_index  assist_esc_ind home_empty_p  estrato_mon3210  male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi  arean3210 Avg_rain {
 						capture destring `var', replace
@@ -245,6 +261,7 @@ foreach var in serv_cov_index assist_educ_P  alguna_limit_p literate_p ed_index_
 						replace `var' = . if `var'==0
 
 			}
+
 			
 	recast int month, force
 	recast int year, force
@@ -357,8 +374,13 @@ destring *, replace
 cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\chikv"
 capture log close 
 log using "arcgis_analysis_only_oct_26_2016_mes.smcl", text replace 
-keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtabarrio countzikadtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 total_pop date
 
+gen date1 = date
+keep if date1 >= 20089
+
+
+keep  POINT_X POINT_Y  codigo_barrio nombre  countdenguedtabarrio countzikadtabarrio countchikdtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 total_pop date
+outsheet using chikv.csv, comma names replace
 
 	misstable sum
 	foreach var in  codigo_barrio arean3210 estrato_mon3210 cobertura_alcant cobertura_energi total_pop assist_educ_P alguna_limit_p literate_p ed_index_sum services_index serv_cov_index assist_esc_ind home_empty_p male_p temp_anom_median_c Avg_rain POINT_X POINT_Y negro__a___mulato__afrop unem_p home_p single_p anm_serv_cov_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_services_index anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain l1anm_Avg_rain rainlag1 templag1{
@@ -370,19 +392,29 @@ keep  POINT_X POINT_Y  codigo_barrio nombre countdenguedtabarrio  countchikdtaba
 			replace `var' = miss`var' if `var' ==. 
 			drop miss`var'
 			}
-			
+			recast int estrato_mon3210, force
 			misstable sum
 
+
+gen zafro = (temp_anom_median_c - .2255588)/  .1379031
+histogram zafro
+histogram negro*
+graph box zafro
+
+gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
+tsset
+gen l1ztemp=L.ztemp
 			save poisson, replace
 			
 
-		local fixed_outcome "countdenguedtabarrio countzikadtabarrio countchikdtabarrio literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210 estrato_mon3210 temp_anom_median_c templag1"
+		local fixed_outcome "countdenguedtabarrio countzikadtabarrio countchikdtabarrio literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210 estrato_mon3210 temp_anom_median_c templag1 zafro"
 		foreach var in `fixed_outcome'{
 					*histogram `var' 
 					*graph export `var'.tif, replace
 				}
 
-			
+ 
+				
 preserve
 	
 use poisson, clear
@@ -424,19 +456,15 @@ rename countdenguedtabarrio dengue
 rename countzikadtabarrio zika
 rename countchikdtabarrio chikv
 
-	foreach var in  chikv {
-	
-
-	*local fixed "literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 temp_anom_median_c templag1"
-	local fixed  "anm_ed_index_sum negro__a___mulato__afrop arean3210 Avg_rain anm_cobertura_energi serv_cov_index estrato_mon3210 home_p single_p male_p alguna_limit_p anm_cobertura_alcant literate_p rainlag1"  
-
+	foreach var in chikv {
+	local fixed  "rainlag1 l1ztemp  zafro Avg_rain serv_cov_index estrato_mon3210 home_p male_p anm_cobertura_energi single_p alguna_limit_p anm_cobertura_alcant literate_p anm_ed_index_sum arean3210 "   	
 	*poisson `var' `fixed', irr vce(robust)
 	*est sto mpglobal`var' 
-poisson `var' `fixed', irr vce(robust)
-
+	poisson `var' `fixed', irr vce(robust)
 	swaic 
-	local fixed  "anm_ed_index_sum rainlag1 Avg_rain negro__a___mulato__afrop arean3210 serv_cov_index anm_cobertura_energi male_p single_p anm_cobertura_alcant"
-
+	est sto swaicpoisson`var' 
+	
+	local fixed "serv_cov_index l1ztemp Avg_rain rainlag1 estrato_mon3210 home_p male_p zafro"
 	nbreg `var' `fixed', irr vce(robust)
 	est sto mnbglobal`var' 
 
@@ -459,6 +487,11 @@ rename countzikadtabarrio zika
 save poisson, replace
 
 xtset codigo_barrio monthtime , monthly
+
+gen date2 = date
+rename date date1
+rename date2 date
+order codigo_barrio	date date1 dengue nombre_barrio arean3210 estrato_mon3210
 outsheet using counts.csv, replace comma name
 
 
@@ -467,17 +500,25 @@ gen logdengue = log(dengue)
 gen logzika = log(zika) 
 gen logchikv = log(chikv) 
 
-gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
+*graph matrix logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
+*graph export scatterplot_matrix.tif, width(6000) replace 
 
-graph matrix logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210  estrato_mon3210 templag1 temp_anom_median_c, half 
-graph export scatterplot_matrix.tif, width(6000) replace 
+egen meanarean3210 = mean(arean3210)
+replace arean3210 = meanarean3210  if arean3210 >50000
+drop meanarean3210 
+
+foreach var in logdengue  logzika logchikv dengue chikv zika ztemp  literate_p  rainlag1 Avg_rain serv_cov_index alguna_limit_p male_p negro__a___mulato__afrop home_p single_p arean3210  estrato_mon3210 templag1 temp_anom_median_c{
+*graph box `var'
+*graph export boxplot`var'.tif, width(6000) replace 
+}
 
 
-foreach var in chikv {
+foreach var in chikv{
 xtset codigo_barrio monthtime, monthly
 	*local fixed "rainlag1 serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210"
-	local fixed  "anm_ed_index_sum rainlag1 Avg_rain negro__a___mulato__afrop arean3210 serv_cov_index male_p "
-*single_p anm_cobertura_alcant anm_cobertura_energi 
+	local fixed "serv_cov_index l1ztemp Avg_rain rainlag1 estrato_mon3210 home_p male_p zafro "
+
+	*single_p anm_cobertura_alcant anm_cobertura_energi 
 	stepwise, pr(.1) pe(.05) : poisson  `var' `fixed', vce(robust) irr
 	est sto mstepwise`var'
 	
@@ -485,8 +526,8 @@ xtset codigo_barrio monthtime, monthly
 	eq int: con
     eq slope: monthtime
 
-	gllamm `var' `fixed', i(codigo_barrio) nrf(2) eqs(slope int) adapt trace
-	est sto gllamm`var'
+	*gllamm `var' `fixed', i(codigo_barrio) nrf(2) eqs(slope int) adapt trace
+	*est sto gllamm`var'
 	
 	capture drop con
 	
@@ -494,13 +535,13 @@ xtset codigo_barrio monthtime, monthly
 	est sto mxtnbregrandom`var'
 	
 	*xtnbreg `var' `fixed', pa corr(ar 3)
-	est sto mxtnbregar3`var'
+	*est sto mxtnbregar3`var'
 	
 	*xtmixed `var'  `fixed'|| codigo_barrio:, var noconst  residuals(ar 3, t(monthtime)) reml
 	*xtmixed `var' `fixed'|| codigo_barrio:, family(nbinomial) link(nbinomial) corr(ar 3) vce(robust) eform
 	*est sto mxtmixed`var'
 		
-	xtgee `var' `fixed', family(nbinomial) link(nbinomial) corr(ar 3) vce(robust) eform
+	xtgee `var' `fixed', family(nbinomial) link(log) corr(ar 2) vce(robust) eform
 	est sto mxt`var'
 
 		margins
@@ -517,9 +558,13 @@ xtset codigo_barrio monthtime, monthly
 		predict yres`var', r
 		
 		predict residual`var', r
+		drop if residual`var'==.
 		gen l1residual`var' = L.residual`var' 
+		drop if l1residual`var'==.
 		gen l2residual`var' = L.l1residual`var'
+		drop if l2residual`var' ==.
 		gen l3residual`var' = L.l2residual`var' 
+		drop if l3residual`var'==.
 
 		graph twoway scatter yres`var' yhat`var' , yline(0) xlabel(3800(200)5000) ylabel(-300(100)400)
 
@@ -536,11 +581,11 @@ xtset codigo_barrio monthtime, monthly
 		graph export "longitudinal_lag3_residual`var'_yhat`var'.tif", replace width(4000)
 
 
-		foreach var in chikv{
-esttab mxt`var' mnbglobal`var' mstepwise`var' gllamm`var' mxtnbregar3`var' mxtnbregrandom`var' using models`var'2.rtf, append eform z
+
+esttab swaicpoisson`var' mxt`var' mnbglobal`var' mstepwise`var' mxtnbregrandom`var' using models`var'2.rtf, append eform z
 
 }
-}
+
 
 
 /*
@@ -548,5 +593,5 @@ graph bar (mean) Avg_rain , over(month, label(angle(45) labsize(small))) over(ye
 graph export rain.tif, width(4000)  replace 
 graph bar (mean) temp_anom_median_c, over(month, label(angle(45) labsize(small))) over(year) legend( label(1 "Median Temperature anomaly")) ytitle("Degrees Celsius") title("Median temperatures anomaly") note("Source: Temp anomalies The HadCRUT4 dataset")  
 graph export temp.tif, width(4000) replace 
-
-table1, vars(dengue conts\  chikv conts\ zika conts\  rainlag1 conts\ Avg_rain conts\ temp_anom_median_c conts\ templag1 conts\ serv_cov_index conts\ services_index conts\ assist_educ_P contn\ alguna_limit_p contn\ literate_p conts\ ed_index_sum conts\ assist_esc_ind conts\ home_empty_p conts\ estrato_mon3210 cat\ male_p conts\ negro__a___mulato__afrop conts\ unem_p conts\ home_p conts\ single_p conts\ cobertura_alcant conts\ cobertura_energi conts\ arean3210 conts\ estrato_mon3210 cate \temp_anom_median_c conts \ templag1 conts\) saving("C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\table1.xls", replace) missing test
+*/
+table1, vars(dengue conts\  chikv conts\ zika conts\  rainlag1 conts\ Avg_rain conts\ temp_anom_median_c conts\ templag1 conts\ serv_cov_index conts\ services_index conts\ assist_educ_P contn\ alguna_limit_p contn\ literate_p conts\ ed_index_sum conts\ assist_esc_ind conts\ home_empty_p conts\ estrato_mon3210 cat\ male_p conts\ negro__a___mulato__afrop conts\ unem_p conts\ home_p conts\ single_p conts\ cobertura_alcant conts\ cobertura_energi conts\ arean3210 conts\ estrato_mon3210 cate \temp_anom_median_c conts \ templag1 conts\) saving("table1.xls", replace) missing test
