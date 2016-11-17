@@ -393,7 +393,7 @@ tsset
 gen l1ztemp=L.ztemp
 
 keep  POINT_X POINT_Y  codigo_barrio nombre_barrio countdenguedtabarrio countzikadtabarrio countchikdtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 total_pop date l1ztemp  zafro  distancetocanalm  total_pop 
-preserve
+
 rename countdenguedtabarrio  dengue
 rename countzikadtabarrio zika
 rename countchikdtabarrio chikv
@@ -401,6 +401,8 @@ rename countchikdtabarrio chikv
 gen date2 = date
 rename date date1
 rename date2 date
+*january 2015
+keep if date >= 20089
 
 
 sort codigo_barrio monthtime 
@@ -448,7 +450,7 @@ rename `var'3 `var'
 			
 order codigo_barrio	date	date1	chikv nombre_barrio	arean3210	estrato_mon3210	cobertura_alcant	cobertura_energi	total_pop	assist_educ_P	alguna_limit_p	literate_p	ed_index_sum	services_index	serv_cov_index	assist_esc_ind	home_empty_p	male_p	month	year	temp_anom_median_c	Avg_rain	POINT_X	POINT_Y	negro__a___mulato__afrop	unem_p	home_p	single_p	zika	chikv	monthtime	anm_serv_cov_index	anm_assist_educ_P	anm_alguna_limit_p	anm_literate_p	anm_ed_index_sum	anm_services_index	anm_home_empty_p	anm_estrato_mon3210	anm_male_p	anm_negro__a___mulato__afrop	anm_unem_p	anm_home_p	anm_single_p	anm_cobertura_alcant	anm_cobertura_energi	anm_arean3210	anm_Avg_rain	l1anm_Avg_rain	rainlag1	templag1 
 outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\surveillance\chikv\chikv.csv", comma names replace
-restore
+
 
 
 	misstable sum
@@ -480,13 +482,16 @@ preserve
 	
 use poisson, clear
 xtset, clear
-	bysort  codigo_barrio: gen sumcountdenguedtabarrio = sum(countdenguedtabarrio)
+	bysort  codigo_barrio: gen sumcountdenguedtabarrio = sum(dengue)
+	drop dengue
 	egen dengue= max(sumcountdenguedtabarrio), by(codigo_barrio) 
 
-	bysort  codigo_barrio: gen sumcountzikadtabarrio = sum(countzikadtabarrio)
+	bysort  codigo_barrio: gen sumcountzikadtabarrio = sum(zika)
+	drop zika
 	egen zika= max(sumcountzikadtabarrio), by(codigo_barrio) 
 
-	bysort  codigo_barrio: gen sumcountchikvdtabarrio = sum(countchikdtabarrio)
+	bysort  codigo_barrio: gen sumcountchikvdtabarrio = sum(chikv)
+	drop chikv
 	egen chikv = max(sumcountchikvdtabarrio), by(codigo_barrio) 
 	
 	collapse (mean) POINT_X POINT_Y  chikv zika dengue literate_p  rainlag1 Avg_rain serv_cov_index anm_ed_index_sum alguna_limit_p male_p negro__a___mulato__afrop home_p single_p anm_cobertura_alcant anm_cobertura_energi arean3210 temp_anom_median_c templag1 estrato_mon3210  distancetocanalm  total_pop , by(codigo_barrio)
@@ -513,9 +518,7 @@ The likelihood ratio test at the bottom of the analysis negative binomial is a t
 
 use poisson, clear
 
-rename countdenguedtabarrio dengue
-rename countzikadtabarrio zika
-rename countchikdtabarrio chikv
+
 
 	foreach var in chikv {
 	local fixed  "rainlag1 l1ztemp  zafro Avg_rain serv_cov_index estrato_mon3210 home_p male_p anm_cobertura_energi single_p alguna_limit_p anm_cobertura_alcant literate_p anm_ed_index_sum arean3210  distancetocanalm  total_pop "   	
@@ -547,17 +550,12 @@ rename countchikdtabarrio chikv
 
 restore
 
-rename countdenguedtabarrio dengue
-rename countchikdtabarrio chikv
-rename countzikadtabarrio zika
 
 save poisson, replace
 
 xtset codigo_barrio monthtime , monthly
 
-gen date2 = date
-rename date date1
-rename date2 date
+
 order codigo_barrio	date date1 chikv nombre_barrio arean3210 estrato_mon3210  distancetocanalm  total_pop 
 outsheet using counts.csv, replace comma name
 
