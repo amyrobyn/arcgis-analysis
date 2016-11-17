@@ -379,8 +379,28 @@ gen date1 = date
 keep if date1 >= 20089
 
 
-keep  POINT_X POINT_Y  codigo_barrio nombre  countdenguedtabarrio countzikadtabarrio countchikdtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 total_pop date
-outsheet using chikv.csv, comma names replace
+gen zafro = (temp_anom_median_c - .2255588)/  .1379031
+histogram zafro
+graph box zafro
+
+gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
+tsset
+gen l1ztemp=L.ztemp
+
+keep  POINT_X POINT_Y  codigo_barrio nombre  countdenguedtabarrio countzikadtabarrio countchikdtabarrio monthtime  year month rainlag1 Avg_rain anm_serv_cov_index anm_services_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 serv_cov_index services_index assist_educ_P alguna_limit_p literate_p ed_index_sum assist_esc_ind home_empty_p estrato_mon3210 male_p negro__a___mulato__afrop unem_p home_p single_p cobertura_alcant cobertura_energi arean3210 anm_Avg_rain l1anm_Avg_rain temp_anom_median_c templag1 total_pop date l1ztemp  zafro 
+preserve
+rename countdenguedtabarrio  dengue
+rename countzikadtabarrio zika
+rename countchikdtabarrio chikv
+
+gen date2 = date
+rename date date1
+rename date2 date
+
+order codigo_barrio	date	date1	chikv	nombre_barrio	arean3210	estrato_mon3210	cobertura_alcant	cobertura_energi	total_pop	assist_educ_P	alguna_limit_p	literate_p	ed_index_sum	services_index	serv_cov_index	assist_esc_ind	home_empty_p	male_p	month	year	temp_anom_median_c	Avg_rain	POINT_X	POINT_Y	negro__a___mulato__afrop	unem_p	home_p	single_p	zika	chikv	monthtime	anm_serv_cov_index	anm_assist_educ_P	anm_alguna_limit_p	anm_literate_p	anm_ed_index_sum	anm_services_index	anm_home_empty_p	anm_estrato_mon3210	anm_male_p	anm_negro__a___mulato__afrop	anm_unem_p	anm_home_p	anm_single_p	anm_cobertura_alcant	anm_cobertura_energi	anm_arean3210	anm_Avg_rain	l1anm_Avg_rain	rainlag1	templag1 
+outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\surveillance\chikv\chikv.csv", comma names replace
+restore
+
 
 	misstable sum
 	foreach var in  codigo_barrio arean3210 estrato_mon3210 cobertura_alcant cobertura_energi total_pop assist_educ_P alguna_limit_p literate_p ed_index_sum services_index serv_cov_index assist_esc_ind home_empty_p male_p temp_anom_median_c Avg_rain POINT_X POINT_Y negro__a___mulato__afrop unem_p home_p single_p anm_serv_cov_index anm_assist_educ_P anm_alguna_limit_p anm_literate_p anm_ed_index_sum anm_services_index anm_home_empty_p anm_estrato_mon3210 anm_male_p anm_negro__a___mulato__afrop anm_unem_p anm_home_p anm_single_p anm_cobertura_alcant anm_cobertura_energi anm_arean3210 anm_Avg_rain l1anm_Avg_rain rainlag1 templag1{
@@ -396,14 +416,6 @@ outsheet using chikv.csv, comma names replace
 			misstable sum
 
 
-gen zafro = (temp_anom_median_c - .2255588)/  .1379031
-histogram zafro
-histogram negro*
-graph box zafro
-
-gen ztemp = (temp_anom_median_c - .5234254)/ .0966483
-tsset
-gen l1ztemp=L.ztemp
 			save poisson, replace
 			
 
@@ -478,7 +490,15 @@ rename countchikdtabarrio chikv
 	graph export mglobal`var'residual_`var'hat.tif, replace width(4000)
 }	
 	save poisson_collapsed, replace
+
+	bysort codigo_barrio: egen chikvsum = sum(chikv)
+	collapse (mean) POINT_X POINT_Y  chikvsum rainlag1 l1ztemp  zafro Avg_rain serv_cov_index estrato_mon3210 home_p male_p anm_cobertura_energi single_p alguna_limit_p anm_cobertura_alcant literate_p anm_ed_index_sum arean3210, by(codigo_barrio)
+	order codigo_barrio POINT_X POINT_Y chikv serv_cov_index l1ztemp Avg_rain rainlag1 estrato_mon3210 home_p male_p zafro
+	outsheet using "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\gwr4nov16\chikv\chikv_collapsed.csv", comma names replace
 restore
+stop
+	
+	restore
 
 rename countdenguedtabarrio dengue
 rename countchikdtabarrio chikv
