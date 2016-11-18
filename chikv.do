@@ -183,6 +183,10 @@ replace estrato_mon3210=. if estrato_mon3210==10
 gen maletofemale = male_pop/female_pop
 gen female_p= female_pop/total_p
 gen male_p= male_pop/total_p
+sum male_p, d
+gen malez = (male_p-.4673245)/.0254059
+replace male_p = malez
+drop malez
 
 drop _merge
 tostring monthyear, replace
@@ -326,7 +330,6 @@ drop if monthtime ==  656
 gen day = 01
 gen date = dofm(monthtime)
 format date %d
-
 drop _merge
 
 merge m:1 codigo_barrio  using "C:\Users\Amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\barrios.csv.dta" 
@@ -647,7 +650,7 @@ xtset codigo_barrio monthtime, monthly
 
 
 
-esttab swaicpoisson`var' mxt`var' mnbglobal`var' mstepwise`var' mxtnbregrandom`var' using models`var'2.rtf, append eform z
+esttab swaicpoisson`var' mxt`var' mnbglobal`var' mstepwise`var' mxtnbregrandom`var' using models`var'101716B.rtf, append eform z
 
 }
 

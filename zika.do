@@ -183,6 +183,10 @@ replace estrato_mon3210=. if estrato_mon3210==10
 gen maletofemale = male_pop/female_pop
 gen female_p= female_pop/total_p
 gen male_p= male_pop/total_p
+sum male_p, d
+gen malez = (male_p-.4673245)/.0254059
+replace male_p = malez
+drop malez
 
 drop _merge
 tostring monthyear, replace
@@ -401,8 +405,9 @@ rename countchikdtabarrio chikv
 gen date2 = date
 rename date date1
 rename date2 date
-*january 2016
-keep if date >= 20454
+
+*November 2015
+keep if date >= 20393
 
 
 sort codigo_barrio monthtime 
@@ -647,8 +652,7 @@ xtset codigo_barrio monthtime, monthly
 
 
 
-esttab swaicpoisson`var' mxt`var' mnbglobal`var' mstepwise`var' mxtnbregrandom`var' using models`var'2.rtf, append eform z
-
+esttab swaicpoisson`var' mxt`var' mnbglobal`var' mstepwise`var' mxtnbregrandom`var' using models`var'101716B.rtf, append eform z
 }
 
 
