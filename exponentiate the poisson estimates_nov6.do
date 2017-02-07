@@ -1,20 +1,18 @@
-cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output"
+cd "C:\Users\amykr\Google Drive\Kent\james\dissertation\chkv and dengue\arcgis analysis\gwr models\output\allthreedisease"
 
 
-foreach dataset in "109chikbsq1" "109zikabsq" "109denbsq"{
+foreach dataset in "zikad"  "denvd" "chikvd"{
 	insheet using "`dataset'.csv", comma clear 
 	save "`dataset'.dta", replace
 }
 
-foreach dataset in "109chikbsq1" "109zikabsq" "109denbsq"{
+foreach dataset in "chikvd" "zikad" "denvd"{
 use `dataset'.dta, clear
 drop t_* ginfluence
 
-		foreach var in    est_intercept est_rainlag1 est_serv_cov_index est_anm_ed_index_sum est_anm_assist_esc_ind est_male_p est_negro__a___mulato__afrop est_single_p est_anm_cobertura_energi est_temp_anom_median_c est_templag1 est_estrato_mon3210{
-*		est_intercept est_rainlag1 est_serv_cov_index est_single_p est_anm_cobertura_energi est_templag1{
+		foreach var in  est_intercept est_anm_services_index est_l1ztemp est_avg_rain est_rainlag1 est_estrato_mon3210 est_male_p est_zafro est_distancetocanalm est_arean3210 est_total_pop{ 
 
-
-				local new = substr("`var'", 5, 10)
+		local new = substr("`var'", 5, 15)
 					rename `var' `new'
 
 				gen exp_`dataset'_`new' = exp(`new') 
@@ -41,9 +39,9 @@ graph export predictedresidual`dataset'.tif, replace width(4000)
 		save `dataset'.dta, replace
 }
 
-merge 1:1 area_key using 109chikbsq1.dta
+merge 1:1 area_key using chikvd.dta
 drop _merge
-merge 1:1 area_key using 109zikabsq.dta
+merge 1:1 area_key using zikad.dta
 drop _merge
 
 save merged, replace
@@ -54,9 +52,10 @@ save exp_se, replace
 
 use merged, clear
 drop exp_SE_* log_* 
+order exp*
 outsheet using exp_est.csv, comma replace
 save exp_est, replace
-
+stop
 
 use merged, clear
 keep area_key log_SE_* predicted* dependent* residual* localpdev*
